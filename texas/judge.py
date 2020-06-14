@@ -27,7 +27,7 @@ class TexasLevel(enum.IntEnum):
 
 class TexasJudge(object):
     SUIT_SIZE = 5
-    MAX_CARD_SIZE = 8
+    MAX_CARD_SIZE = 7
 
     def __init__(self, is_debug=False):
         self.is_debug = is_debug
