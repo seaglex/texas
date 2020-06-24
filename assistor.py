@@ -9,33 +9,39 @@ from texas.poker import PokerCard
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("-p", "--player_num", type=int, default=4)
     parser.add_argument("-a", "--auto_num", type=int, default=0)
     parser.add_argument("-t", "--trial", type=int, default=1000)
     args = parser.parse_args()
 
     simulator = monte_carlo.Simulator(judge.TexasJudge(args.verbose))
-    cards = [PokerCard(x[0], x[1]) for x in simulator.total_cards]
+    total_cards = [PokerCard(x[0], x[1]) for x in simulator.total_cards]
     r = random.Random(0)
 
-    while True:
-        if args.auto_num == 0:
-            print("Input your 2 cards (split by space): ", end="")
+    is_auto = args.auto_num > 0
+    while not is_auto or args.auto_num > 0:
+        if not is_auto:
+            print("Input your 2+ total_cards (split by space): ", end="")
             line = input()
             if line.strip().lower() == "exit":
                 break
             words = line.split()
-            if len(words) != 2:
+            if len(words) < 2:
                 print("Wrong input")
                 continue
-            card1 = PokerCard.try_parse(words[0])
-            card2 = PokerCard.try_parse(words[1])
-            if card1 is None or card2 is None:
+            cards = [PokerCard.try_parse(x) for x in words if x]
+            if sum(1 for c in cards if not c) > 0 or len(cards) < 2:
                 print("Wrong input")
                 continue
         else:
-            r.shuffle(cards)
-            card1, card2 = cards[0], cards[1]
+            r.shuffle(total_cards)
+            cards = total_cards[:2]
             args.auto_num -= 1
 
-        pr = simulator.get_pr([card1.get_data(), card2.get_data()], trial_num=args.trial)
-        print(card1, card2, "Winning pr:", pr)
+        pr = simulator.get_pr(
+            [c.get_data() for c in cards[:2]],
+            [c.get_data() for c in cards[2:]],
+            player_num=args.player_num,
+            trial_num=args.trial
+        )
+        print(cards, "Winning pr:", pr)
