@@ -103,6 +103,7 @@ class TexasJudge(object):
         last_digit = PokerDigit.unknown
         straight_flush_cnt = 0
         flush_cnt = 0
+        ace = None
         cards = list(sorted(cards, key=lambda c: (c[0] << 4) + c[1], reverse=True))
         for index, (kind, digit) in enumerate(cards):
             if kind != last_kind:
@@ -110,19 +111,32 @@ class TexasJudge(object):
                 straight_flush_cnt = 1
                 last_digit = digit
                 last_kind = kind
+                if digit == PokerDigit.A:
+                    ace = cards[index]
+                else:
+                    ace = None
                 continue
             flush_cnt += 1
             if digit == last_digit - 1:
                 straight_flush_cnt += 1
             else:
                 straight_flush_cnt = 1
+            if digit == PokerDigit.A:
+                ace = cards[index]
             last_digit = digit
             if flush_cnt >= self.SUIT_SIZE:
                 if straight_flush_cnt == self.SUIT_SIZE:
+                    # the first, the best
                     best_level = TexasLevel.straight_flush
                     best_flush = cards[index + 1 - self.SUIT_SIZE: index + 1]
                     break
+                elif straight_flush_cnt == self.SUIT_SIZE - 1 and ace is not None and last_digit == 2:
+                    # the last, the best
+                    best_level = TexasLevel.straight_flush
+                    best_flush = [ace, *(cards[index + 2 - self.SUIT_SIZE: index + 1])]
+                    break
                 elif best_level < TexasLevel.flush:
+                    # might find straight flush later
                     best_level = TexasLevel.flush
                     best_flush = cards[index + 1 - self.SUIT_SIZE: index + 1]
                 else:
@@ -134,8 +148,11 @@ class TexasJudge(object):
         cards = list(sorted(cards, key=lambda x: x[1], reverse=True))
         last_digit = PokerDigit.unknown
         suit = []
+        ace = None
         for index, c in enumerate(cards):
             digit = c[1]
+            if digit == PokerDigit.A:
+                ace = c
             if digit == last_digit - 1:
                 straight_cnt += 1
                 suit.append(c)
@@ -148,6 +165,10 @@ class TexasJudge(object):
             last_digit = digit
             if straight_cnt == self.SUIT_SIZE:
                 return TexasLevel.straight, suit
+        if straight_cnt == self.SUIT_SIZE - 1 and last_digit == 2 and ace is not None:
+            straight_cnt += 1
+            suit.append(ace)
+            return TexasLevel.straight, suit
         return TexasLevel.unknown, None
 
     def _check_nums(self, cards):
