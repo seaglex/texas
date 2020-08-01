@@ -1,4 +1,5 @@
 import random
+import numpy as np
 
 
 class SimpleMovingGame(object):
@@ -71,3 +72,83 @@ class SimpleMovingGame(object):
             else:
                 last_pos = pos
         return 0.0
+
+
+class RedBlackCardGame(object):
+    """
+    * red-black card
+    * A：50%概率得到red/black card
+    * A resign -20
+    * A hold
+        * B resign 10
+        * B see
+            * red/black 30/-40
+    """
+    class APlayer(object):
+        def __init__(self, action=5):
+            self._action = action
+
+        def get_action(self, is_red, *args):
+            if is_red:
+                return 0
+            return self._action
+
+        def update(self, *args):
+            return
+
+    class BPlayer(object):
+        def __init__(self, action=5):
+            self._action = action
+
+        def get_action(self, *args):
+            return self._action
+
+        def update(self, *args):
+            return
+
+    def __init__(self):
+        self._rand = random.Random(0)
+        self._pr_red = 0.5
+        self._resigning_prs = np.arange(0, 1.01, 0.1)
+        self._actions = np.arange(0, 11, 1)
+        self._normalizer = 1 / 40
+
+    def train(self, a_learner, b_learner, itr_num=10000):
+        for itr in range(itr_num):
+            if itr >= 9000:
+                itr = itr
+            is_red = self._rand.random() < self._pr_red
+            a_action = a_learner.get_action(is_red, self._actions, itr)
+            a_resigning_pr = self._resigning_prs[a_action]
+            has_a_resigned = self._rand.random() < a_resigning_pr
+            if has_a_resigned:
+                a_learner.update(is_red, a_action, "a_resigned", -20 * self._normalizer)
+            else:
+                b_action = b_learner.get_action(None, self._actions, itr)
+                has_b_resigned = self._rand.random() < self._resigning_prs[b_action]
+                if has_b_resigned:
+                    a_learner.update(is_red, a_action, "b_resigned", 10 * self._normalizer)
+                    b_learner.update(None, b_action, "b_resigned", -10 * self._normalizer)
+                else:
+                    score = (30 if is_red else -40) * self._normalizer
+                    a_learner.update(is_red, a_action, "saw", score)
+                    b_learner.update(None, b_action, "saw", -score)
+            pass
+
+    def test(self, a_agent, b_agent, is_debug=False):
+        is_red = self._rand.random() < self._pr_red
+        a_action = a_agent.get_action(is_red, self._actions)
+        a_resigning_pr = self._resigning_prs[a_action]
+        has_a_resigned = self._rand.random() < a_resigning_pr
+        if has_a_resigned:
+            result, score = "a_resigned", -20 * self._normalizer
+        else:
+            b_action = b_agent.get_action(None, self._actions)
+            has_b_resigned = self._rand.random() < self._resigning_prs[b_action]
+            if has_b_resigned:
+                result, score = "b_resigned", 10 * self._normalizer
+            else:
+                result, score = "saw", (30 if is_red else -40) * self._normalizer
+        if is_debug:
+            print("Red" if is_red else "Black", result, score)
+        return score

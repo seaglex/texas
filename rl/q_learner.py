@@ -10,13 +10,13 @@ from rl import bandit
 class QLearner(object):
     GAMMA = 0.99
 
-    def __init__(self):
+    def __init__(self, sampler, alpha):
         self._q_values = {}
         self._q_counts = {}
-        self._alpha = 0.2
+        self._alpha = alpha
         self._default_value = 0.0
         self._rand = random.Random(0)
-        self._sampler = bandit.ThompsonSampler()
+        self._sampler = sampler
 
     def _get_default_action_values(self):
         return defaultdict(lambda: self._default_value)

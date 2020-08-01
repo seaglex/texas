@@ -2,13 +2,14 @@ import unittest
 
 from rl.q_learner import QLearner
 from rl.simple_games import SimpleMovingGame
+from rl import bandit
 
 
 class QLearnerUnitTest(unittest.TestCase):
     @staticmethod
     def test_simple_moving_game(test_num=1):
         simple_game = SimpleMovingGame()
-        learner = QLearner()
+        learner = QLearner(bandit.ThompsonSampler(), 0.2)
         simple_game.train(learner)
         winning_count = 0
         for n in range(test_num):
