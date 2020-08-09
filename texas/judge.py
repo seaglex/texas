@@ -7,6 +7,7 @@ Card: size=2数组表示(kind, digit)
 
 from collections import defaultdict
 import enum
+import numpy as np
 
 from .poker import PokerDigit, PokerKind, PokerCard
 
@@ -37,6 +38,11 @@ class TexasJudge(object):
             return []
         return self._arg_max([self._get_level_suit(cs) for cs in card_lists])
 
+    def rank(self, card_lists):
+        if not card_lists:
+            return []
+        return self._rank([self._get_level_suit(cs) for cs in card_lists])
+
     def _arg_max(self, level_best_suits):
         """
         :param level_best_suits: size >= 1
@@ -59,16 +65,18 @@ class TexasJudge(object):
                 best_level, best_suit = level, suit
                 best_indexes = [i]
                 continue
-            worser = False
+            worse = False
             better = False
-            for j in range(self.SUIT_SIZE):
+            for j in range(len(best_suit)):
+                if j >= len(suit):
+                    print("error")
                 if suit[j][1] < best_suit[j][1]:
-                    worser = True
+                    worse = True
                     break
                 elif suit[j][1] > best_suit[j][1]:
                     better = True
                     break
-            if worser:
+            if worse:
                 continue
             if better:
                 best_level, best_suit = level, suit
@@ -78,6 +86,30 @@ class TexasJudge(object):
         if self.is_debug:
             print(best_indexes)
         return best_indexes
+
+    def _rank(self, level_best_suits):
+        # level + five cards, packed together as hex
+        packed_results = np.zeros(len(level_best_suits))
+        for n, (level, cards) in enumerate(level_best_suits):
+            result = level
+            for m, c in enumerate(cards):
+                result = (result << 4) + c[1]
+            packed_results[n] = result
+        if self.is_debug:
+            for n, packed in enumerate(packed_results):
+                print(level_best_suits[n][0], "%X" % packed)
+        indexes = np.argsort(packed_results)
+        ranks = np.zeros(len(level_best_suits), dtype=int)
+        rank_level = 0
+        last_repr = None
+        for index in indexes[::-1]:
+            if last_repr is not None and packed_results[index] != last_repr:
+                rank_level += 1
+            ranks[index] = rank_level
+            last_repr = packed_results[index]
+        if self.is_debug:
+            print(' '.join(str(l) for l in rank_level))
+        return ranks
 
     @staticmethod
     def _select_suit(cards, first_digit, second_digit, left_num):
@@ -93,7 +125,10 @@ class TexasJudge(object):
                 continue
             if len(suit) < left_num:
                 suit.append(card)
-        return first_cards + second_cards + suit
+        suit = first_cards + second_cards + suit
+        if len(suit) > TexasJudge.SUIT_SIZE:  # 3 + 3
+            suit = suit[:TexasJudge.SUIT_SIZE]
+        return suit
 
     def _check_flush(self, cards):
         # check straight & flush (except straight it self)
@@ -126,14 +161,14 @@ class TexasJudge(object):
             last_digit = digit
             if flush_cnt >= self.SUIT_SIZE:
                 if straight_flush_cnt == self.SUIT_SIZE:
-                    # the first, the best
+                    # the first and the best
                     best_level = TexasLevel.straight_flush
                     best_flush = cards[index + 1 - self.SUIT_SIZE: index + 1]
                     break
                 elif straight_flush_cnt == self.SUIT_SIZE - 1 and ace is not None and last_digit == 2:
-                    # the last, the best
+                    # the last and the best
                     best_level = TexasLevel.straight_flush
-                    best_flush = [ace, *(cards[index + 2 - self.SUIT_SIZE: index + 1])]
+                    best_flush = [*(cards[index + 2 - self.SUIT_SIZE: index + 1]), ace]
                     break
                 elif best_level < TexasLevel.flush:
                     # might find straight flush later
@@ -179,18 +214,17 @@ class TexasJudge(object):
         digit_counts = list(sorted(digit_counts.items(), key=lambda dc: dc[1] * 100 + dc[0], reverse=True))
         if digit_counts[0][1] >= 4:  # four
             return TexasLevel.four, self._select_suit(cards, digit_counts[0][0], None, 1)
-        if digit_counts[0][1] == 3 and digit_counts[1][1] >= 2:  # full house
+        if digit_counts[0][1] == 3 and len(digit_counts) >= 2 and digit_counts[1][1] >= 2:  # full house
             return TexasLevel.full_house, self._select_suit(cards, digit_counts[0][0], digit_counts[1][0], 0)
         if digit_counts[0][1] == 3:  # three
             return TexasLevel.three, self._select_suit(cards, digit_counts[0][0], None, 2)
-        if digit_counts[0][1] == 2 and digit_counts[1][1] == 2:  # two pairs
+        if digit_counts[0][1] == 2 and len(digit_counts) >= 2 and digit_counts[1][1] == 2:  # two pairs
             return TexasLevel.two_pairs, self._select_suit(cards, digit_counts[0][0], digit_counts[1][0], 1)
         if digit_counts[0][1] == 2:  # pair
             return TexasLevel.pair, self._select_suit(cards, digit_counts[0][0], None, 3)
         return TexasLevel.high_card, self._select_suit(cards, None, None, 5)
 
     def _get_level_suit(self, cards):
-        assert len(cards) >= self.SUIT_SIZE
         assert len(cards) <= self.MAX_CARD_SIZE
         best_level, best_suit = self._check_flush(cards)
         if best_level == TexasLevel.straight_flush:
