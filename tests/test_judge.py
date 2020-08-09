@@ -27,6 +27,11 @@ class TexasJudgeTestCase(unittest.TestCase):
             ([(2, 14), (3, 9), (3, 12), (1, 4), (1, 7), (1, 10), (1, 3)], TexasLevel.high_card),
         ]
         self.dup_cards_levels_ranks = [0, 0, 1, 2, 2]
+        self.two_cards_levels = [
+            ([[2, 8], [3, 8]], TexasLevel.pair),
+            ([[2, 14], [2, 13]], TexasLevel.high_card),
+        ]
+        self.two_cards_levels_ranks = [0, 1]
 
     def test_level_judgement(self):
         judge = TexasJudge()
@@ -46,6 +51,8 @@ class TexasJudgeTestCase(unittest.TestCase):
         self.assertEquals(list(ranks), self.cards_levels_ranks)
         ranks = judge.rank([x[0] for x in self.dup_cards_levels])
         self.assertEquals(list(ranks), self.dup_cards_levels_ranks)
+        ranks = judge.rank([x[0] for x in self.two_cards_levels])
+        self.assertEquals(list(ranks), self.two_cards_levels_ranks)
 
 
 if __name__ == "__main__":

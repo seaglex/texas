@@ -65,16 +65,18 @@ class TexasJudge(object):
                 best_level, best_suit = level, suit
                 best_indexes = [i]
                 continue
-            worser = False
+            worse = False
             better = False
-            for j in range(self.SUIT_SIZE):
+            for j in range(len(best_suit)):
+                if j >= len(suit):
+                    print("error")
                 if suit[j][1] < best_suit[j][1]:
-                    worser = True
+                    worse = True
                     break
                 elif suit[j][1] > best_suit[j][1]:
                     better = True
                     break
-            if worser:
+            if worse:
                 continue
             if better:
                 best_level, best_suit = level, suit
@@ -123,7 +125,10 @@ class TexasJudge(object):
                 continue
             if len(suit) < left_num:
                 suit.append(card)
-        return first_cards + second_cards + suit
+        suit = first_cards + second_cards + suit
+        if len(suit) > TexasJudge.SUIT_SIZE:  # 3 + 3
+            suit = suit[:TexasJudge.SUIT_SIZE]
+        return suit
 
     def _check_flush(self, cards):
         # check straight & flush (except straight it self)
@@ -209,18 +214,17 @@ class TexasJudge(object):
         digit_counts = list(sorted(digit_counts.items(), key=lambda dc: dc[1] * 100 + dc[0], reverse=True))
         if digit_counts[0][1] >= 4:  # four
             return TexasLevel.four, self._select_suit(cards, digit_counts[0][0], None, 1)
-        if digit_counts[0][1] == 3 and digit_counts[1][1] >= 2:  # full house
+        if digit_counts[0][1] == 3 and len(digit_counts) >= 2 and digit_counts[1][1] >= 2:  # full house
             return TexasLevel.full_house, self._select_suit(cards, digit_counts[0][0], digit_counts[1][0], 0)
         if digit_counts[0][1] == 3:  # three
             return TexasLevel.three, self._select_suit(cards, digit_counts[0][0], None, 2)
-        if digit_counts[0][1] == 2 and digit_counts[1][1] == 2:  # two pairs
+        if digit_counts[0][1] == 2 and len(digit_counts) >= 2 and digit_counts[1][1] == 2:  # two pairs
             return TexasLevel.two_pairs, self._select_suit(cards, digit_counts[0][0], digit_counts[1][0], 1)
         if digit_counts[0][1] == 2:  # pair
             return TexasLevel.pair, self._select_suit(cards, digit_counts[0][0], None, 3)
         return TexasLevel.high_card, self._select_suit(cards, None, None, 5)
 
     def _get_level_suit(self, cards):
-        assert len(cards) >= self.SUIT_SIZE
         assert len(cards) <= self.MAX_CARD_SIZE
         best_level, best_suit = self._check_flush(cards)
         if best_level == TexasLevel.straight_flush:
