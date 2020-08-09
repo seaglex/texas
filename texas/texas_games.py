@@ -11,7 +11,6 @@ import enum
 import numpy as np
 
 from .poker import PokerKind, PokerConst
-from .judge import TexasJudge
 
 
 class AgentWrongBetError(Exception):
@@ -23,6 +22,10 @@ class AgentWrongBetError(Exception):
 
 
 class InnerUnexpectedScanningOverError(Exception):
+    pass
+
+
+class InnerNoWinnerError(Exception):
     pass
 
 
@@ -58,8 +61,8 @@ class TexasContext(object):
         self.round_state_records = [[]] * 4
         self.round_bet_records = [[]] * 4
 
-        # last states
-        self.round = TexasRound.PreFlop
+        # latest states
+        self.round = None
         self.cum_bets = [0] * num
         self.latest_states = [AgentState.Blind] * num
         # the total amount of money in main pot when the agent all-in
@@ -100,9 +103,10 @@ class TexasContext(object):
 
 
 class NoLimitTexasGame(object):
-    def __init__(self, judge, big_blind=20):
+    def __init__(self, judge, big_blind=20, minimal_unit=10):
         self._big_blind = big_blind
-        self._small_blind = big_blind // 2
+        self._minimal_unit = 10
+        self._small_blind = max(big_blind // minimal_unit // 2, 1) * minimal_unit
         self._rand = random.Random(0)
         self._judge = judge
 
@@ -124,7 +128,7 @@ class NoLimitTexasGame(object):
             agent_cards.append(self.total_cards[n * 2: n * 2 + 2, :].tolist())
         self.run_a_round(TexasRound.PreFlop, agents, context)
         if context.is_hand_over():
-            return self.shutdown(agent_cards, [], context)
+            return self.shut_down(agent_cards, [], context)
         # flop
         card_index = len(agents) * 2 + 1
         community_cards = self.total_cards[card_index: card_index + 3, :].tolist()
@@ -132,7 +136,7 @@ class NoLimitTexasGame(object):
             agent.get_community_cards(community_cards)
         self.run_a_round(TexasRound.Flop, agents, context)
         if context.is_hand_over():
-            return self.shutdown(agent_cards, community_cards, context)
+            return self.shut_down(agent_cards, community_cards, context)
         # turn
         card_index = card_index + 3 + 1
         community_cards.append(self.total_cards[card_index])
@@ -140,7 +144,7 @@ class NoLimitTexasGame(object):
             agent.get_community_cards(community_cards)
         self.run_a_round(TexasRound.Turn, agents, context)
         if context.is_hand_over():
-            return self.shutdown(agent_cards, community_cards, context)
+            return self.shut_down(agent_cards, community_cards, context)
         # river
         card_index = card_index + 1 + 1
         community_cards.append(self.total_cards[card_index])
@@ -148,7 +152,7 @@ class NoLimitTexasGame(object):
             agent.get_community_cards(community_cards)
         self.run_a_round(TexasRound.River, agents, context)
         # over
-        return self.shutdown(agent_cards, community_cards, context)
+        return self.shut_down(agent_cards, community_cards, context)
 
     def _check_bet(self, bet, last_bet, state, cur_bet):
         if state == AgentState.Fold:
@@ -169,6 +173,7 @@ class NoLimitTexasGame(object):
         return NotImplementedError()
 
     def run_a_round(self, round_, agents, context):
+        context.round = round_
         latest_bets = [0] * len(agents)
         latest_states = context.latest_states
         if round_ == TexasRound.PreFlop:
@@ -228,5 +233,60 @@ class NoLimitTexasGame(object):
             pass
         pass
 
-    def shutdown(self, agent_cards, community_cards, context):
-        pass
+    def shut_down(self, agent_cards, community_cards, context):
+        indexes = []
+        for n, state in enumerate(context.latest_states):
+            if state != AgentState.Fold:
+                indexes.append(n)
+        if len(indexes) == 0:
+            raise InnerNoWinnerError()
+        amounts = np.zeros(len(agent_cards))
+        if len(indexes) == 1:
+            amounts[indexes[0]] = context.total_pot
+        else:
+            card_lists = []
+            all_in_main_pots = []
+            for index in indexes:
+                card_lists.append(agent_cards[index] + community_cards)
+                all_in_main_pots.append(context.all_in_main_pots[index])
+            ranks = self._judge.rank(card_lists)
+            shares = self._divide_the_money(context.total_pot, all_in_main_pots, ranks)
+            for n, index in enumerate(indexes):
+                amounts[index] = shares[n]
+        return amounts
+
+    def _divide_the_money(self, total_pot, all_in_main_pots, ranks):
+        ranks = np.array(ranks)
+        org_indexes = np.arange(len(ranks), dtype=int)
+        share_amounts = np.zeros(len(ranks), dtype=int)
+        exhausted_pot = 0
+        rank_level = ranks.min() - 1
+        while exhausted_pot < total_pot:
+            rank_level += 1
+            best_indexes = org_indexes[ranks == rank_level]
+            winner_all_in_pots = []
+            for index in best_indexes:
+                main_pot = all_in_main_pots[org_indexes[index]]
+                winner_all_in_pots.append(main_pot if main_pot else total_pot)
+            indexes = np.argsort(winner_all_in_pots)
+            best_indexes = np.array(best_indexes)[indexes]
+            winner_all_in_pots = np.array(winner_all_in_pots)[indexes]
+            share_num = len(best_indexes) + 1
+            for n, index in enumerate(best_indexes):
+                share_num -= 1
+                main_pot = winner_all_in_pots[n]
+                to_be_share = main_pot - exhausted_pot
+                if to_be_share <= 0:
+                    continue
+                shares = self._divide_evenly(to_be_share, share_num)
+                for m in range(len(shares)):
+                    share_amounts[org_indexes[best_indexes[m + n]]] += shares[m]
+                exhausted_pot = main_pot
+        return share_amounts
+
+    def _divide_evenly(self, amount, num):
+        if num == 1:
+            return [amount]
+        share = (amount // self._minimal_unit // num) * self._minimal_unit
+        last_share = amount - share * (num - 1)
+        return [last_share] + [share] * (num - 1)
