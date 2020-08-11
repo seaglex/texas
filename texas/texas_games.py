@@ -21,11 +21,11 @@ class AgentWrongBetError(Exception):
         return self._str
 
 
-class InnerUnexpectedScanningOverError(Exception):
+class GameUnexpectedScanningOverError(Exception):
     pass
 
 
-class InnerNoWinnerError(Exception):
+class GameNoWinnerError(Exception):
     pass
 
 
@@ -47,7 +47,7 @@ class TexasContext(object):
 
     def finish_a_scan(self, round_, states, cur_bets, is_round_over):
         if not is_round_over and len(states) != self.num:
-            raise InnerUnexpectedScanningOverError()
+            raise GameUnexpectedScanningOverError()
         if len(states) < self.num:
             for n in range(len(states), self.num):
                 states.append(self.round_state_records[round_][-1][n])
@@ -213,7 +213,7 @@ class NoLimitTexasGame(object):
                 hand_bet = max(hand_bet, bet)
 
                 if is_verbose:
-                    print("\tAgent%d" % index, state, bet)
+                    print("\tAgent%d" % index, state.name, bet)
                 if num_ready == len(agents) or num_alive == 1:
                     context.finish_a_scan(round_, states, bets, is_round_over=True)
                     for agent in agents:
@@ -232,8 +232,8 @@ class NoLimitTexasGame(object):
             if state != AgentState.Fold:
                 indexes.append(n)
         if len(indexes) == 0:
-            raise InnerNoWinnerError()
-        amounts = np.zeros(len(agent_cards))
+            raise GameNoWinnerError()
+        amounts = np.zeros(len(agent_cards), dtype=int)
         if len(indexes) == 1:
             amounts[indexes[0]] = context.total_pot
         else:
@@ -247,15 +247,28 @@ class NoLimitTexasGame(object):
             for n, index in enumerate(indexes):
                 amounts[index] = shares[n]
         if is_verbose:
-            print("End of game, winners")
+            print("End of the game")
+            for index in indexes:
+                print("\tAgent%d" % index, context.latest_states[index].name, end=" ")
+                if len(indexes) > 1:
+                    print(" ".join(str(PokerCard(*x)) for x in agent_cards[index]))
+                else:
+                    print()
+            if len(indexes) > 1:
+                print("Community cards", " ".join(str(PokerCard(*x)) for x in community_cards))
+            print("Winners")
             for n, amount in enumerate(amounts):
                 if amount > 0:
                     print("\tAgent%d" % n, amount)
             print("***Details***")
             print("States")
-            print(context.round_state_records)
+            for n, state_records in enumerate(context.round_state_records):
+                for record in state_records:
+                    print(TexasRound(n).name, '\t'.join(x.name for x in record), sep="\t")
             print("Bets")
-            print(context.round_bet_records)
+            for n, bet_records in enumerate(context.round_bet_records):
+                for record in bet_records:
+                    print(TexasRound(n).name, '\t'.join(str(x) for x in record), sep="\t")
             print("Cumulative bets")
             print(context.cum_bets)
             print(context.total_pot)
