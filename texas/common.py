@@ -38,6 +38,13 @@ class AgentState(enum.IntEnum):
             "all_in": AgentState.All_in,
         }.get(s, None)
 
+    @staticmethod
+    def get_normal_action(hand_bet):
+        if hand_bet == 0:
+            return (AgentState.Fold, AgentState.Check, AgentState.Bet, AgentState.All_in)
+        else:
+            return (AgentState.Fold, AgentState.Call, AgentState.Raise, AgentState.Raise_more, AgentState.All_in)
+
 
 class BaseAgent(object):
     def __init__(self, big_blind, total_amount=None):
@@ -47,9 +54,9 @@ class BaseAgent(object):
         self._hole_cards = None
         self._community_cards = None
         self._big_blind = big_blind
-        self._total_amount = total_amount
-        self._cum_amount = 0
-        self._latest_bet = 0
+        self._total_amount = total_amount  # Total money
+        self._cum_amount = 0               # agent's money in pool
+        self._latest_bet = 0               # latest bet in this round
 
     def _wrap_return(self, state, bet):
         if self._total_amount is not None and self._cum_amount + bet >= self._total_amount:
@@ -75,5 +82,12 @@ class BaseAgent(object):
         self._cum_amount += self._latest_bet
         self._latest_bet = 0
 
-    def add_amount(self, amount):
-        self._total_amount += amount
+    def get_amount(self):
+        return self._total_amount
+
+    def set_amount(self, amount):
+        self._total_amount = amount
+
+    def set_reward(self, amount):
+        if self._total_amount is not None:
+            self._total_amount += amount

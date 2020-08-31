@@ -30,17 +30,21 @@ class GameNoWinnerError(Exception):
 
 
 class TexasContext(object):
-    def __init__(self, num):
+    def __init__(self, num, big_blind):
+        # basic info
         self.num = num
+        self.big_blind = big_blind
 
         # history
         self.round_state_records = [[], [], [], []]
         self.round_bet_records = [[], [], [], []]
 
-        # latest states
         self.round = None
-        self.cum_bets = [0] * num
+        self.cum_bets = [0] * num  # cumulative bets before this round
+        # latest states in this round
+        self.latest_bets = [0] * num
         self.latest_states = [AgentState.Blind] * num
+
         # the total amount of money in main pot when the agent all-in
         self.all_in_main_pots = [None] * num
         self.total_pot = 0
@@ -65,6 +69,10 @@ class TexasContext(object):
                 self.cum_bets[n] += cur_bets[n]
             for n in range(self.num):
                 self.total_pot += cur_bets[n]
+            for n in range(self.num):
+                if not self.latest_states[n].is_hand_over():
+                    self.latest_states[n] = AgentState.Blind
+                self.latest_bets[n] = 0
         self.round_state_records[round_].append(states)
         self.round_bet_records[round_].append(cur_bets)
         return
@@ -97,7 +105,7 @@ class NoLimitTexasGame(object):
         if is_verbose:
             print("Starting a new hand...")
         agent_cards = []
-        context = TexasContext(len(agents))
+        context = TexasContext(len(agents), self._big_blind)
         # shuffle
         np.random.seed(0)
         np.random.shuffle(self.total_cards)
@@ -161,8 +169,9 @@ class NoLimitTexasGame(object):
         return NotImplementedError()
 
     def _run_a_round(self, round_, agents, context, is_verbose):
+        # states/bets is redundant, but kept for clarity
         context.round = round_
-        latest_bets = [0] * len(agents)
+        latest_bets = context.latest_bets
         latest_states = context.latest_states
         if round_ == TexasRound.PreFlop:
             states = [AgentState.Blind] * 2
