@@ -2,16 +2,22 @@ from texas import common
 
 
 class StaticAgent(common.BaseAgent):
-    TRIAL_NUM = 1000
+    TRIAL_NUM = 200
 
     def __init__(self, big_blind, total_amount, pr_calc, doubt_max_call=None):
         super().__init__(big_blind, total_amount)
         self.pr_calc = pr_calc
-        self._doubt_max_call = doubt_max_call if doubt_max_call else big_blind * 5
+        self._doubt_max_call = doubt_max_call if doubt_max_call else big_blind * 10
+        # cache
+        self._cache = common.SingleCache()
 
     def get_bet(self, hand_bet, context, index):
         num = context.num
-        pr = self.pr_calc.get_pr(self._hole_cards, self._community_cards, num, StaticAgent.TRIAL_NUM)
+        if self._cache.is_valid(len(self._community_cards)):
+            pr = self._cache.get_value()
+        else:
+            pr = self.pr_calc.get_pr(self._hole_cards, self._community_cards, num, StaticAgent.TRIAL_NUM)
+            self._cache.set_value(len(self._community_cards), pr)
         if pr < 1.0 / num:
             if hand_bet == 0:
                 return self._wrap_return(common.AgentState.Check, 0)
@@ -29,3 +35,28 @@ class StaticAgent(common.BaseAgent):
         if hand_bet == 0:
             return self._wrap_return(common.AgentState.Bet, self._big_blind)
         return self._wrap_return(common.AgentState.Raise, hand_bet * 2)
+
+
+class BraveAgent(common.BaseAgent):
+    TRIAL_NUM = 200
+
+    def __init__(self, big_blind, total_amount, pr_calc):
+        super().__init__(big_blind, total_amount)
+        self.pr_calc = pr_calc
+        self._cache = common.SingleCache()
+
+    def get_bet(self, hand_bet, context, index):
+        num = context.num
+        if self._cache.is_valid(len(self._community_cards)):
+            pr = self._cache.get_value()
+        else:
+            pr = self.pr_calc.get_pr(self._hole_cards, self._community_cards, num, BraveAgent.TRIAL_NUM)
+            self._cache.set_value(len(self._community_cards), pr)
+        if pr < 1.5 / num:
+            if hand_bet == 0:
+                return self._wrap_return(common.AgentState.Check, 0)
+            else:
+                return self._wrap_return(common.AgentState.Fold, self._latest_bet)
+        if hand_bet == 0:
+            return self._wrap_return(common.AgentState.Check, 0)
+        return self._wrap_return(common.AgentState.Call, hand_bet)

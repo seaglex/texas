@@ -1,4 +1,5 @@
 import argparse
+import pickle
 
 from texas.texas_games import NoLimitTexasGame
 from texas.judge import TexasJudge
@@ -9,39 +10,48 @@ from texas.common import BaseAgent
 from rl import q_learner, bandit
 
 
-def start_game(agent_num, is_verbose, is_public):
+def load_model(fname):
+    with open(fname, "rb") as fin:
+        return pickle.load(fin)
+
+def start_game(agent_num, is_public, models):
     judge = TexasJudge()
     simulator = Simulator(judge)
     big_blind = 20
 
-    agents: List[BaseAgent] = [naive_agents.StaticAgent(big_blind, 2000, simulator, None)]
-    for n in range(agent_num - 2):
+    agents = []
+    for n in range(agent_num - len(models) - 1):
         agents.append(naive_agents.StaticAgent(big_blind, 2000, simulator, 1000))
-    # agents.append(human_agent.HumanAgent(big_blind, 2000, simulator))
-    agents.append(key_state_agent.KeyStateAgent(
-        big_blind, 2000,
-        simulator, key_state_agent.StateQuantizer(),
-        q_learner.QLearner(bandit.EpsilonGreedySampler(0.3), 0.01),
-    ))
+    for n in range(len(models)):
+        agents.append(load_model(models[n]))
+        agents[-1].set_amount(2000)
+        agents[-1].is_test = True
+    agents.append(human_agent.HumanAgent(big_blind, 2000, simulator))
 
     game = NoLimitTexasGame(judge, big_blind)
 
-    while True:
-        amounts = game.run_a_hand(agents, is_verbose=is_verbose, is_public=is_public)
+    is_bankrupt = False
+    while not is_bankrupt:
+        amounts = game.run_a_hand(agents, is_verbose=True, is_public=is_public)
+        for n, amount in enumerate(amounts):
+            print("Agent%d" % n, amount)
         for n, agent in enumerate(agents):
             agent.set_reward(amounts[n])
-            if agent.get_amount() == 0:
-                agent.set_amount(2000)
-        break
+            if agent.get_amount() < big_blind:
+                is_bankrupt = True
+                break
 
+    # end of game
+    print("Left amount")
     for n, agent in enumerate(agents):
-        print("Agent%d" % n, amounts[n])
+        print("Agent%d" % n, agent.get_amount())
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--agent_num", type=int, default=8)
+    parser.add_argument("-m", "--model", nargs="*")
     parser.add_argument("-p", "--public", action="store_true")
-    parser.add_argument("-q", "--quiet", action="store_true")
     args = parser.parse_args()
-    start_game(args.agent_num, not args.quiet, args.public)
+
+    start_game(args.agent_num, args.public, args.model)

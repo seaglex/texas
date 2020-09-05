@@ -18,8 +18,8 @@ class QLearner(object):
         self._rand = random.Random(0)
         self._sampler = sampler
 
-    def _get_default_action_values(self):
-        return defaultdict(lambda: self._default_value)
+    def _get_default_value(self):
+        return self._default_value
 
     def get_action(self, state, available_actions, iter_cnt=None):
         action_scores = self._q_values.get(state, {})
@@ -31,7 +31,7 @@ class QLearner(object):
     def update(self, state, action, next_state, reward):
         action_values = self._q_values.get(state)
         if action_values is None:
-            action_values = self._get_default_action_values()
+            action_values = defaultdict(self._get_default_value)
             action_counts = defaultdict(int)
             self._q_values[state] = action_values
             self._q_counts[state] = action_counts

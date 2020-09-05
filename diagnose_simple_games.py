@@ -25,8 +25,8 @@ def test_simple_moving_game(train_num=10000, test_num=1, is_debug=True):
 
 def test_red_black_game(train_num=10000, test_num=1, is_debug=True):
     game = RedBlackCardGame()
-    a_learner = QLearner(bandit.EpsilonGreedySampler(0.5), 0.001)
-    b_learner = QLearner(bandit.EpsilonGreedySampler(0.5), 0.001)
+    a_learner = QLearner(bandit.EpsilonGreedySampler(), 0.001)
+    b_learner = QLearner(bandit.EpsilonGreedySampler(), 0.001)
     game.train(a_learner, b_learner, train_num)
 
     print("player-A")

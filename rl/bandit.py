@@ -1,4 +1,5 @@
 import random
+import math
 
 
 class GreedySampler(object):
@@ -8,7 +9,8 @@ class GreedySampler(object):
         best = None
         if not action_scores:
             return available_actions[0]
-        for action, score in action_scores.items():
+        for action in available_actions:
+            score = action_scores.get(action, 0.0)
             if largest is None or score > largest:
                 largest = score
                 best = action
@@ -16,12 +18,18 @@ class GreedySampler(object):
 
 
 class EpsilonGreedySampler(object):
-    def __init__(self, epsilon=0.1):
-        self._epsilon = epsilon
+    def __init__(self, eps_start=0.9, eps_end=0.05, eps_decay=1000):
+        self._eps_start = eps_start
+        self._eps_end = eps_end
+        self._eps_decay = eps_decay
         self._rand = random.Random(0)
+        self._count = 0
 
     def get_action(self, available_actions, action_scores, _):
-        if action_scores is None or (self._rand.random() < self._epsilon):
+        self._count += 1
+        eps_threshold = self._eps_end + (self._eps_start - self._eps_end) * math.exp(
+            -1. * self._count / self._eps_decay)
+        if action_scores is None or (self._rand.random() < eps_threshold):
             return available_actions[self._rand.randint(0, len(available_actions) - 1)]
         largest = None
         best = None

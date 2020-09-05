@@ -39,11 +39,29 @@ class AgentState(enum.IntEnum):
         }.get(s, None)
 
     @staticmethod
-    def get_normal_action(hand_bet):
+    def get_normal_actions(hand_bet):
         if hand_bet == 0:
-            return (AgentState.Fold, AgentState.Check, AgentState.Bet, AgentState.All_in)
+            return AgentState.Fold, AgentState.Check, AgentState.All_in, AgentState.Bet
         else:
-            return (AgentState.Fold, AgentState.Call, AgentState.Raise, AgentState.Raise_more, AgentState.All_in)
+            return AgentState.Fold, AgentState.Call, AgentState.Raise, AgentState.Raise_more, AgentState.All_in
+
+
+class SingleCache(object):
+    def __init__(self):
+        self._key = None
+        self._value = None
+        self._initialized = False
+
+    def is_valid(self, key):
+        return self._initialized and key == self._key
+
+    def get_value(self):
+        return self._value
+
+    def set_value(self, key, value):
+        self._key = key
+        self._value = value
+        self._initialized = True
 
 
 class BaseAgent(object):
@@ -51,8 +69,8 @@ class BaseAgent(object):
         """
         :param total_amount: None for inf
         """
-        self._hole_cards = None
-        self._community_cards = None
+        self._hole_cards = []
+        self._community_cards = []
         self._big_blind = big_blind
         self._total_amount = total_amount  # Total money
         self._cum_amount = 0               # agent's money in pool
@@ -91,3 +109,4 @@ class BaseAgent(object):
     def set_reward(self, amount):
         if self._total_amount is not None:
             self._total_amount += amount
+        self._cum_amount = 0
