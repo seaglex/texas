@@ -77,6 +77,9 @@ class BaseAgent(object):
         self._latest_bet = 0               # latest bet in this round
 
     def _wrap_return(self, state, bet):
+        """
+        Handle the case that there is not enough money & save latest_bet
+        """
         if self._total_amount is not None and self._cum_amount + bet >= self._total_amount:
             self._latest_bet = self._total_amount - self._cum_amount
             return AgentState.All_in, self._latest_bet
