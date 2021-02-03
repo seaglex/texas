@@ -99,13 +99,11 @@ class InnerKeyStateAgent(common.BaseAgent):
         self._cache = common.SingleCache()
 
     def _get_inner_actions(self, hand_bet, max_amount):
-        avail_actions = [InnerAction.Conservative]
+        avail_actions = [InnerAction.Conservative, InnerAction.Normal]
         base = self._big_blind if hand_bet == 0 else hand_bet
-        if max_amount >= base:
-            avail_actions.append(InnerAction.Normal)
-        if max_amount >= base * 2:
+        if max_amount > base:
             avail_actions.append(InnerAction.Aggressive)
-        if max_amount >= base * 4:
+        if max_amount > base * 2:
             avail_actions.append(InnerAction.Very_Aggressive)
         return avail_actions
 
