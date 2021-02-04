@@ -38,42 +38,25 @@ class StateQuantizer(object):
 
 class State4Quantizer(StateQuantizer):
     def quantize(self, pr, hand_bet, remain_amt, context, index):
-        latest_bet = context.latest_bets[index]
-        total_amount = context.total_pot  # How much to earn (before this round)
+        _, latest_bet = context.get_state_bet(index)
         delta_bet = min(hand_bet - latest_bet, remain_amt) # How much to bet
-        for bet in context.latest_bets:
-            total_amount += min(bet, delta_bet + latest_bet)
+        total_amount = context.get_max_earning(delta_bet + latest_bet)
 
-        num_left = 0
-        num_all_in= 0
-        for n in range(context.num):
-            if context.latest_states[n] != common.AgentState.Fold:
-                num_left += 1
-            elif context.latest_states[n] == common.AgentState.All_in:
-                num_all_in += 1
         return (
             StateQuantizer.quantize_pr(pr),
             StateQuantizer.quantize_amount(context.big_blind, total_amount),
             StateQuantizer.quantize_amount(context.big_blind, delta_bet),
-            num_all_in > 0,
+            False,  # it's due to a bug, the trained model in 202010 is fact a state3quantizer
         )
 
 
 class State5Quantizer(StateQuantizer):
     def quantize(self, pr, hand_bet, remain_amt, context, index):
-        latest_bet = context.latest_bets[index]
-        total_amount = context.total_pot  # How much to earn (before this round)
+        _, latest_bet = context.get_state_bet(index)
         delta_bet = min(hand_bet - latest_bet, remain_amt) # How much to bet
-        for bet in context.latest_bets:
-            total_amount += min(bet, delta_bet + latest_bet)
+        total_amount = context.get_max_earning(delta_bet + latest_bet)
 
-        num_left = 0
-        num_all_in= 0
-        for n in range(context.num):
-            if context.latest_states[n] != common.AgentState.Fold:
-                num_left += 1
-            elif context.latest_states[n] == common.AgentState.All_in:
-                num_all_in += 1
+        num_left = context.num_left
         return (
             context.round,
             StateQuantizer.quantize_pr(pr),

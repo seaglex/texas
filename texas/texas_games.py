@@ -6,7 +6,6 @@ state: probability + amount
 action: check/bet/raise/raise_more/all_in/fold
 phase: pre-flop/flop/Turn/river
 """
-import random
 import numpy as np
 
 from .poker import PokerKind, PokerConst, PokerCard
@@ -19,10 +18,6 @@ class AgentWrongBetError(Exception):
 
     def __str__(self):
         return self._str
-
-
-class GameUnexpectedScanningOverError(Exception):
-    pass
 
 
 class GameNoWinnerError(Exception):
@@ -41,59 +36,70 @@ class TexasContext(object):
 
         self.round = None
         self.cum_bets = [0] * num  # cumulative bets before this round
-        # latest states in this round
-        self.latest_bets = [0] * num
-        self.latest_states = [AgentState.Blind] * num
 
         # the total amount of money in main pot when the agent all-in
         self.all_in_main_pots = [None] * num
         self.total_pot = 0
 
-    def finish_a_scan(self, round_, states, cur_bets, is_round_over):
-        if not is_round_over and len(states) != self.num:
-            raise GameUnexpectedScanningOverError()
-        if len(states) < self.num:
-            for n in range(len(states), self.num):
-                states.append(self.latest_states[n])
-                cur_bets.append(self.latest_bets[n])
+        # latest states in this round & to accelerate calculations
+        self.num_left = num
+        self.num_all_in = 0
+        self.latest_bets = [0] * num
+        self.latest_states = [AgentState.Blind] * num
+
+    def get_state_bet(self, index):
+        return self.latest_states[index], self.latest_bets[index]
+
+    def set_state_bet(self, index, state, bet):
+        if self.latest_states[index] != state:
+            if state == AgentState.Fold:
+                self.num_left -= 1
+            if state == AgentState.All_in:
+                self.num_all_in += 1
+        self.latest_states[index], self.latest_bets[index] = state, bet
+
+    def get_max_earning(self, my_bet):
+        total_amt = self.total_pot
+        for bet in self.latest_bets:
+            total_amt += min(bet, my_bet)
+        return total_amt
+
+    def finish_a_scan(self, is_round_over):
+        round_ = self.round
+        self.round_state_records[round_].append(self.latest_states[:])
+        self.round_bet_records[round_].append(self.latest_bets[:])
         if is_round_over:
             for n in range(self.num):
-                if states[n] == AgentState.All_in and (
+                if self.latest_states[n] == AgentState.All_in and (
                     round_ == TexasRound.PreFlop or self.round_state_records[round_ - 1][-1][n] != AgentState.All_in
-                ):
+                ):  # new all-in
                     main_pot = self.total_pot
                     for m in range(self.num):
-                        main_pot += min(cur_bets[m], cur_bets[n])
+                        main_pot += min(self.latest_bets[m], self.latest_bets[n])
                     self.all_in_main_pots[n] = main_pot
             for n in range(self.num):
-                self.cum_bets[n] += cur_bets[n]
+                self.cum_bets[n] += self.latest_bets[n]
             for n in range(self.num):
-                self.total_pot += cur_bets[n]
+                self.total_pot += self.latest_bets[n]
             # update latest
             for n in range(self.num):
                 if not self.latest_states[n].is_hand_over():
                     self.latest_states[n] = AgentState.Blind
                 self.latest_bets[n] = 0
-        self.round_state_records[round_].append(states)
-        self.round_bet_records[round_].append(cur_bets)
         return
 
     def is_one_winner(self):
-        num_active = 0
-        for n in range(self.num):
-            if self.latest_states[n] == AgentState.Fold:
-                continue
-            num_active += 1
-        return num_active <= 1
+        return self.num_left <= 1
 
 
 class NoLimitTexasGame(object):
-    def __init__(self, judge, big_blind=20, minimal_unit=10):
+    def __init__(self, judge, big_blind=20, minimal_unit=10, *, seed=None):
         self._big_blind = big_blind
         self._minimal_unit = 10
         self._small_blind = max(big_blind // minimal_unit // 2, 1) * minimal_unit
-        self._rand = random.Random(0)
         self._judge = judge
+        if seed is not None:
+            np.random.seed(seed)
 
         digits = np.arange(PokerConst.MIN_DIGIT, PokerConst.MAX_DIGIT + 1, 1)
         kinds = [PokerKind.heart.value] * PokerConst.DIGIT_NUM
@@ -169,69 +175,48 @@ class NoLimitTexasGame(object):
         return NotImplementedError()
 
     def _run_a_round(self, round_, agents, context, is_verbose):
-        # states/bets is redundant, but kept for clarity
         context.round = round_
-        latest_bets = context.latest_bets
-        latest_states = context.latest_states
         if round_ == TexasRound.PreFlop:
-            states = [AgentState.Blind] * 2
-            bets = [self._small_blind, self._big_blind]
-            latest_bets[0] = self._small_blind
-            latest_bets[1] = self._big_blind
-            latest_states[0] = AgentState.Blind
-            latest_states[1] = AgentState.Blind
+            context.set_state_bet(0, AgentState.Blind, self._small_blind)
+            context.set_state_bet(1, AgentState.Blind, self._big_blind)
             agents[0].set_bet(self._small_blind)
             agents[1].set_bet(self._big_blind)
             hand_bet = self._big_blind
             start_index = 2
         else:
-            states = []
-            bets = []
             hand_bet = 0
             start_index = 0
 
         num_ready = 0
-        num_active = 0
-        for s in latest_states:
-            if s.is_hand_over():
-                continue
-            num_active += 1
-        while True:
+        while context.num_left - context.num_all_in > 0:
             # scan
             for index in range(start_index, len(agents)):
                 agent = agents[index]
-                latest_bet = latest_bets[index]
-                latest_state = latest_states[index]
+                latest_state, latest_bet = context.get_state_bet(index)
                 if latest_state.is_hand_over():
                     state, bet = latest_state, latest_bet
                 else:
                     state, bet = agent.get_bet(hand_bet, context, index)
                 if not self._check_bet(hand_bet, latest_bet, state, bet):
                     raise AgentWrongBetError("agent%d" % index, hand_bet, latest_bet, state, bet)
-                states.append(state)
-                bets.append(bet)
-                latest_states[index] = state
-                latest_bets[index] = bet
+                context.set_state_bet(index, state, bet)
 
-                if latest_state != state and state == AgentState.Fold:
-                    num_active -= 1
                 if bet > hand_bet:
                     num_ready = 1
                 elif state.is_ready_for_round_end():
                     num_ready += 1
                 hand_bet = max(hand_bet, bet)
+                num_active = context.num_left - context.num_all_in
 
                 if is_verbose:
                     print("\tAgent%d" % index, state.name, bet)
-                if num_ready == len(agents) or num_active == 1:
-                    context.finish_a_scan(round_, states, bets, is_round_over=True)
+                if num_ready == len(agents) or num_active == 0:
+                    context.finish_a_scan(is_round_over=True)
                     for agent in agents:
                         agent.round_over()
                     return
             # new scan
-            context.finish_a_scan(round_, states, bets, is_round_over=False)
-            states = []
-            bets = []
+            context.finish_a_scan(is_round_over=False)
             start_index = 0
         pass
 
