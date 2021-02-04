@@ -13,8 +13,8 @@ from .common import AgentState, TexasRound
 
 
 class AgentWrongBetError(Exception):
-    def __init__(self, agent, hand_bet, latest_bet, state, bet):
-        self._str = "{0} hand-bet({1}) {2} {3}({4})".format(agent, hand_bet, str(state), bet, latest_bet)
+    def __init__(self, agent, open_bet, latest_bet, state, bet):
+        self._str = "{0} open-bet({1}) {2} {3}({4})".format(agent, open_bet, str(state), bet, latest_bet)
 
     def __str__(self):
         return self._str
@@ -110,7 +110,7 @@ class NoLimitTexasGame(object):
 
     def run_a_hand(self, agents, is_verbose, is_public=False):
         if is_verbose:
-            print("Starting a new hand...")
+            print("***Starting a new hand***")
         agent_cards = []
         context = TexasContext(len(agents), self._big_blind)
         # shuffle
@@ -181,10 +181,10 @@ class NoLimitTexasGame(object):
             context.set_state_bet(1, AgentState.Blind, self._big_blind)
             agents[0].set_bet(self._small_blind)
             agents[1].set_bet(self._big_blind)
-            hand_bet = self._big_blind
+            open_bet = self._big_blind
             start_index = 2
         else:
-            hand_bet = 0
+            open_bet = 0
             start_index = 0
 
         num_ready = 0
@@ -196,16 +196,16 @@ class NoLimitTexasGame(object):
                 if latest_state.is_hand_over():
                     state, bet = latest_state, latest_bet
                 else:
-                    state, bet = agent.get_bet(hand_bet, context, index)
-                if not self._check_bet(hand_bet, latest_bet, state, bet):
-                    raise AgentWrongBetError("agent%d" % index, hand_bet, latest_bet, state, bet)
+                    state, bet = agent.get_bet(open_bet, context, index)
+                if not self._check_bet(open_bet, latest_bet, state, bet):
+                    raise AgentWrongBetError("agent%d" % index, open_bet, latest_bet, state, bet)
                 context.set_state_bet(index, state, bet)
 
-                if bet > hand_bet:
+                if bet > open_bet:
                     num_ready = 1
                 elif state.is_ready_for_round_end():
                     num_ready += 1
-                hand_bet = max(hand_bet, bet)
+                open_bet = max(open_bet, bet)
                 num_active = context.num_left - context.num_all_in
 
                 if is_verbose:
@@ -267,7 +267,6 @@ class NoLimitTexasGame(object):
                     print(TexasRound(n).name, '\t'.join(str(x) for x in record), sep="\t")
             print("Cumulative bets")
             print(context.cum_bets)
-            print(context.total_pot)
         return amounts
 
     def _divide_the_money(self, total_pot, all_in_main_pots, ranks):

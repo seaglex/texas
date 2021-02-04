@@ -39,8 +39,8 @@ class AgentState(enum.IntEnum):
         }.get(s, None)
 
     @staticmethod
-    def get_normal_actions(hand_bet):
-        if hand_bet == 0:
+    def get_normal_actions(open_bet):
+        if open_bet == 0:
             return AgentState.Fold, AgentState.Check, AgentState.All_in, AgentState.Bet
         else:
             return AgentState.Fold, AgentState.Call, AgentState.Raise, AgentState.Raise_more, AgentState.All_in

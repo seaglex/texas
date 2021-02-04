@@ -1,5 +1,6 @@
 import argparse
 import pickle
+import random
 
 from texas.texas_games import NoLimitTexasGame
 from texas.judge import TexasJudge
@@ -14,7 +15,7 @@ def load_model(fname):
     with open(fname, "rb") as fin:
         return pickle.load(fin)
 
-def start_game(agent_num, is_public, models):
+def start_game(agent_num, is_public, models, seed):
     judge = TexasJudge()
     simulator = Simulator(judge)
     big_blind = 20
@@ -28,18 +29,21 @@ def start_game(agent_num, is_public, models):
         agents[-1].is_test = True
     agents.append(human_agent.HumanAgent(big_blind, 2000, simulator))
 
-    game = NoLimitTexasGame(judge, big_blind)
+    if seed is None:
+        seed = random.randint(0, 32768)
+        print("seed", seed)
+    game = NoLimitTexasGame(judge, big_blind, seed=seed)
 
     is_bankrupt = False
     while not is_bankrupt:
         amounts = game.run_a_hand(agents, is_verbose=True, is_public=is_public)
         for n, amount in enumerate(amounts):
             print("Agent%d" % n, amount)
+        print()
         for n, agent in enumerate(agents):
             agent.set_reward(amounts[n])
             if agent.get_amount() < big_blind:
                 is_bankrupt = True
-                break
 
     # end of game
     print("Left amount")
@@ -49,9 +53,13 @@ def start_game(agent_num, is_public, models):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-a", "--agent_num", type=int, default=8)
-    parser.add_argument("-m", "--model", nargs="*")
+    parser.add_argument("-n", "--num_agents", type=int, default=8)
+    parser.add_argument("-m", "--models", nargs="*")
     parser.add_argument("-p", "--public", action="store_true")
+    parser.add_argument("-s", "--seed", type=int, default=-1)
     args = parser.parse_args()
 
-    start_game(args.agent_num, args.public, args.model)
+    start_game(args.num_agents, args.public,
+               args.models if args.models else [],
+               seed=args.seed if args.seed >= 0 else None
+               )
