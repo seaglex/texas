@@ -28,6 +28,9 @@ def start_game(agent_num, is_public, models, seed):
         agents[-1].set_amount(2000)
         agents[-1].is_test = True
     agents.append(human_agent.HumanAgent(big_blind, 2000, simulator))
+    for n, a in enumerate(agents):
+        a._name = None
+        a._agent_index = n
 
     if seed is None:
         seed = random.randint(0, 32768)
@@ -38,7 +41,7 @@ def start_game(agent_num, is_public, models, seed):
     while not is_bankrupt:
         amounts = game.run_a_hand(agents, is_verbose=True, is_public=is_public)
         for n, amount in enumerate(amounts):
-            print("Agent%d" % n, amount)
+            print(agents[n].get_name(), amount)
         print()
         for n, agent in enumerate(agents):
             agent.set_reward(amounts[n])

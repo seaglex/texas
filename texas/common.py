@@ -17,12 +17,10 @@ class AgentState(enum.IntEnum):
     Raise = 5
     Raise_more = 6
     All_in = 7
+    Padding = -1
 
     def is_hand_over(self):
         return self == AgentState.Fold or self == AgentState.All_in
-
-    def is_ready_for_round_end(self):
-        return self in {AgentState.Check, AgentState.Call, AgentState.Fold, AgentState.All_in}
 
     @staticmethod
     def try_parse(s):
@@ -36,6 +34,7 @@ class AgentState(enum.IntEnum):
             "raise": AgentState.Raise,
             "raise_more": AgentState.Raise_more,
             "all_in": AgentState.All_in,
+            "padding": AgentState.Padding,
         }.get(s, None)
 
     @staticmethod
@@ -65,7 +64,9 @@ class SingleCache(object):
 
 
 class BaseAgent(object):
-    def __init__(self, big_blind, total_amount=None):
+    glb_count = 0
+
+    def __init__(self, big_blind, total_amount=None, *, name=None):
         """
         :param total_amount: None for inf
         """
@@ -75,6 +76,14 @@ class BaseAgent(object):
         self._total_amount = total_amount  # Total money
         self._cum_amount = 0               # agent's money in pool
         self._latest_bet = 0               # latest bet in this round
+        self._name = name
+        self._agent_index = BaseAgent.glb_count
+        BaseAgent.glb_count += 1
+
+    def get_name(self):
+        if not self._name:
+            return type(self).__name__ + str(self._agent_index)
+        return self._name
 
     def _wrap_return(self, state, bet):
         """
