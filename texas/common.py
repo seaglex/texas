@@ -8,7 +8,7 @@ class TexasRound(enum.IntEnum):
     River = 3
 
 
-class AgentState(enum.IntEnum):
+class AgentAction(enum.IntEnum):
     Blind = 0
     Fold = 1
     Check = 2
@@ -20,29 +20,29 @@ class AgentState(enum.IntEnum):
     Padding = -1
 
     def is_hand_over(self):
-        return self == AgentState.Fold or self == AgentState.All_in
+        return self == AgentAction.Fold or self == AgentAction.All_in
 
     @staticmethod
     def try_parse(s):
         s = s.lower()
         return {
-            "blind": AgentState.Blind,
-            "fold": AgentState.Fold,
-            "check": AgentState.check,
-            "bet": AgentState.bet,
-            "call": AgentState.Call,
-            "raise": AgentState.Raise,
-            "raise_more": AgentState.Raise_more,
-            "all_in": AgentState.All_in,
-            "padding": AgentState.Padding,
+            "blind": AgentAction.Blind,
+            "fold": AgentAction.Fold,
+            "check": AgentAction.check,
+            "bet": AgentAction.bet,
+            "call": AgentAction.Call,
+            "raise": AgentAction.Raise,
+            "raise_more": AgentAction.Raise_more,
+            "all_in": AgentAction.All_in,
+            "padding": AgentAction.Padding,
         }.get(s, None)
 
     @staticmethod
     def get_normal_actions(open_bet):
         if open_bet == 0:
-            return AgentState.Fold, AgentState.Check, AgentState.All_in, AgentState.Bet
+            return AgentAction.Fold, AgentAction.Check, AgentAction.All_in, AgentAction.Bet
         else:
-            return AgentState.Fold, AgentState.Call, AgentState.Raise, AgentState.Raise_more, AgentState.All_in
+            return AgentAction.Fold, AgentAction.Call, AgentAction.Raise, AgentAction.Raise_more, AgentAction.All_in
 
 
 class SingleCache(object):
@@ -90,15 +90,15 @@ class BaseAgent(object):
             return type(self).__name__ + str(self._agent_index)
         return self._name
 
-    def _wrap_return(self, state, bet):
+    def _wrap_return(self, action, bet):
         """
         Handle the case that there is not enough money & save latest_bet
         """
         if self._total_amount is not None and self._cum_amount + bet >= self._total_amount:
             self._latest_bet = self._total_amount - self._cum_amount
-            return AgentState.All_in, self._latest_bet
+            return AgentAction.All_in, self._latest_bet
         self._latest_bet = bet
-        return state, bet
+        return action, bet
 
     # the following are for game-agent interaction
     def start_new_game(self):

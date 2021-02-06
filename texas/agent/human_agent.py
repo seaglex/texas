@@ -22,22 +22,22 @@ class HumanAgent(common.BaseAgent):
 
     def get_bet(self, open_bet, context, index):
         while True:
-            state_str = input("F(old)/C(heck)/C(all)/B(et)/R(aise)/A(ll-in)): ")
-            state_str = state_str.lower()
-            if state_str in ("f", "fold"):
-                return self._wrap_return(common.AgentState.Fold, self._latest_bet)
-            if state_str in ("c", "check", "call"):
+            action_str = input("F(old)/C(heck)/C(all)/B(et)/R(aise)/A(ll-in)): ")
+            action_str = action_str.lower()
+            if action_str in ("f", "fold"):
+                return self._wrap_return(common.AgentAction.Fold, self._latest_bet)
+            if action_str in ("c", "check", "call"):
                 if open_bet == 0:
-                    return self._wrap_return(common.AgentState.Check, 0)
-                return self._wrap_return(common.AgentState.Call, open_bet)
-            if open_bet == 0 and state_str in ("b", "bet"):
+                    return self._wrap_return(common.AgentAction.Check, 0)
+                return self._wrap_return(common.AgentAction.Call, open_bet)
+            if open_bet == 0 and action_str in ("b", "bet"):
                 amount = self._read_amount(open_bet, lambda x: x >= self._big_blind)
-                return self._wrap_return(common.AgentState.Bet, amount)
-            if open_bet > 0 and state_str in ("r", "raise"):
+                return self._wrap_return(common.AgentAction.Bet, amount)
+            if open_bet > 0 and action_str in ("r", "raise"):
                 amount = self._read_amount(open_bet, lambda x: x >= open_bet * 2)
-                return self._wrap_return(common.AgentState.Raise, amount)
-            if state_str in ("a", "all-in", "allin", "all_in"):
-                return self._wrap_return(common.AgentState.All_in, self._total_amount - self._cum_amount)
+                return self._wrap_return(common.AgentAction.Raise, amount)
+            if action_str in ("a", "all-in", "allin", "all_in"):
+                return self._wrap_return(common.AgentAction.All_in, self._total_amount - self._cum_amount)
             print("Wrong input")
 
     def get_hole_cards(self, hold_cards):

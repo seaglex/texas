@@ -1,6 +1,6 @@
 """
 Solution1:
-state: probability + amount
+action: probability + amount
 """
 from texas import common
 import math
@@ -38,7 +38,7 @@ class StateQuantizer(object):
 
 class State4Quantizer(StateQuantizer):
     def quantize(self, pr, open_bet, remain_amt, context, index):
-        _, latest_bet = context.get_state_bet(index)
+        _, latest_bet = context.get_action_bet(index)
         delta_bet = min(open_bet - latest_bet, remain_amt) # How much to bet
         total_amount = context.get_max_earning(delta_bet + latest_bet)
 
@@ -52,7 +52,7 @@ class State4Quantizer(StateQuantizer):
 
 class State5Quantizer(StateQuantizer):
     def quantize(self, pr, open_bet, remain_amt, context, index):
-        _, latest_bet = context.get_state_bet(index)
+        _, latest_bet = context.get_action_bet(index)
         delta_bet = min(open_bet - latest_bet, remain_amt) # How much to bet
         total_amount = context.get_max_earning(delta_bet + latest_bet)
 
@@ -96,7 +96,7 @@ class InnerKeyStateAgent(common.BaseAgent):
 
     def get_bet(self, open_bet, context, index):
         num = context.num
-        # state
+        # action
         if self._cache.is_valid(context.round):
             pr = self._cache.get_value()
         else:
@@ -116,24 +116,24 @@ class InnerKeyStateAgent(common.BaseAgent):
     def _get_action_and_bet(self, action, open_bet):
         if open_bet == 0:
             if action == InnerAction.Conservative:
-                return common.AgentState.Check, 0
+                return common.AgentAction.Check, 0
             if action == InnerAction.Normal:
-                return common.AgentState.Bet, self._big_blind
+                return common.AgentAction.Bet, self._big_blind
             if action == InnerAction.Aggressive:
-                return common.AgentState.Bet, self._big_blind * 2
+                return common.AgentAction.Bet, self._big_blind * 2
             if action == InnerAction.Very_Aggressive:
-                return common.AgentState.Bet, self._big_blind * 4
+                return common.AgentAction.Bet, self._big_blind * 4
         else:
             if action == InnerAction.Conservative:
                 if self._latest_bet == open_bet:  # only big-blind can reach here
-                    return common.AgentState.Call, self._latest_bet
-                return common.AgentState.Fold, self._latest_bet,
+                    return common.AgentAction.Call, self._latest_bet
+                return common.AgentAction.Fold, self._latest_bet,
             if action == InnerAction.Normal:
-                return common.AgentState.Call, open_bet,
+                return common.AgentAction.Call, open_bet,
             if action == InnerAction.Aggressive:
-                return common.AgentState.Raise, open_bet * 2
+                return common.AgentAction.Raise, open_bet * 2
             if action == InnerAction.Very_Aggressive:
-                return common.AgentState.Raise_more, open_bet * 4
+                return common.AgentAction.Raise_more, open_bet * 4
 
     def set_reward(self, amount):
         super().set_reward(amount)

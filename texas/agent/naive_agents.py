@@ -12,15 +12,15 @@ class RandomAgent(common.BaseAgent):
         pr = self._rand.random()
         if open_bet == 0:
             if pr < 0.33:
-                return self._wrap_return(common.AgentState.Check, 0)
+                return self._wrap_return(common.AgentAction.Check, 0)
             if pr < 0.67:
-                return self._wrap_return(common.AgentState.Bet, self._big_blind)
-            return self._wrap_return(common.AgentState.Bet, self._big_blind * 2)
+                return self._wrap_return(common.AgentAction.Bet, self._big_blind)
+            return self._wrap_return(common.AgentAction.Bet, self._big_blind * 2)
         if pr < 0.33:
-            return self._wrap_return(common.AgentState.Fold, self._latest_bet)
+            return self._wrap_return(common.AgentAction.Fold, self._latest_bet)
         if pr < 0.67:
-            return self._wrap_return(common.AgentState.Call, open_bet)
-        return self._wrap_return(common.AgentState.Raise, open_bet * 2)
+            return self._wrap_return(common.AgentAction.Call, open_bet)
+        return self._wrap_return(common.AgentAction.Raise, open_bet * 2)
 
 
 class StaticAgent(common.BaseAgent):
@@ -47,21 +47,21 @@ class StaticAgent(common.BaseAgent):
         assert context.latest_bets[index] == self._latest_bet
         if pr < 1.0 / num:
             if open_bet == 0:
-                return self._wrap_return(common.AgentState.Check, 0)
+                return self._wrap_return(common.AgentAction.Check, 0)
             else:
-                return self._wrap_return(common.AgentState.Fold, self._latest_bet)
+                return self._wrap_return(common.AgentAction.Fold, self._latest_bet)
         if pr < 0.5:
             if open_bet == 0:
-                return self._wrap_return(common.AgentState.Check, 0)
+                return self._wrap_return(common.AgentAction.Check, 0)
             if open_bet > 0:
                 if open_bet < self._doubt_max_call:
-                    return self._wrap_return(common.AgentState.Call, open_bet)
+                    return self._wrap_return(common.AgentAction.Call, open_bet)
                 else:
-                    return self._wrap_return(common.AgentState.Fold, self._latest_bet)
+                    return self._wrap_return(common.AgentAction.Fold, self._latest_bet)
         # high rate to win
         if open_bet == 0:
-            return self._wrap_return(common.AgentState.Bet, self._big_blind)
-        return self._wrap_return(common.AgentState.Raise, open_bet * 2)
+            return self._wrap_return(common.AgentAction.Bet, self._big_blind)
+        return self._wrap_return(common.AgentAction.Raise, open_bet * 2)
 
 
 class BraveAgent(common.BaseAgent):
@@ -86,9 +86,9 @@ class BraveAgent(common.BaseAgent):
         assert context.latest_bets[index] == self._latest_bet
         if pr < 1.5 / num:
             if open_bet == 0:
-                return self._wrap_return(common.AgentState.Check, 0)
+                return self._wrap_return(common.AgentAction.Check, 0)
             else:
-                return self._wrap_return(common.AgentState.Fold, self._latest_bet)
+                return self._wrap_return(common.AgentAction.Fold, self._latest_bet)
         if open_bet == 0:
-            return self._wrap_return(common.AgentState.Check, 0)
-        return self._wrap_return(common.AgentState.Call, open_bet)
+            return self._wrap_return(common.AgentAction.Check, 0)
+        return self._wrap_return(common.AgentAction.Call, open_bet)
