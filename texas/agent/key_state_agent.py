@@ -90,14 +90,19 @@ class InnerKeyStateAgent(common.BaseAgent):
             avail_actions.append(InnerAction.Very_Aggressive)
         return avail_actions
 
+    def start_new_game(self):
+        super(InnerKeyStateAgent, self).start_new_game()
+        self._cache.reset()
+
     def get_bet(self, open_bet, context, index):
         num = context.num
         # state
-        if self._cache.is_valid(len(self._community_cards)):
+        if self._cache.is_valid(context.round):
             pr = self._cache.get_value()
         else:
             pr = self.pr_calc.get_pr(self._hole_cards, self._community_cards, num, InnerKeyStateAgent.TRIAL_NUM)
-            self._cache.set_value(len(self._community_cards), pr)
+            self._cache.set_value(context.round, pr)
+        assert context.latest_bets[index] == self._latest_bet
         state = self.state_quantizer.quantize(pr, open_bet, self._total_amount - self._cum_amount, context, index)
         remain_amount = (self._total_amount - self._cum_amount) + self._latest_bet
         inner_action = self.q_learner.get_action(state, self._get_inner_actions(open_bet, remain_amount),

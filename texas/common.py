@@ -54,6 +54,10 @@ class SingleCache(object):
     def is_valid(self, key):
         return self._initialized and key == self._key
 
+    def reset(self):
+        self._initialized = False
+        self._key = None
+
     def get_value(self):
         return self._value
 
@@ -70,15 +74,16 @@ class BaseAgent(object):
         """
         :param total_amount: None for inf
         """
-        self._hole_cards = []
-        self._community_cards = []
         self._big_blind = big_blind
         self._total_amount = total_amount  # Total money
-        self._cum_amount = 0               # agent's money in pool
-        self._latest_bet = 0               # latest bet in this round
         self._name = name
         self._agent_index = BaseAgent.glb_count
         BaseAgent.glb_count += 1
+
+        self._hole_cards = []
+        self._community_cards = []
+        self._cum_amount = 0               # agent's money in pool
+        self._latest_bet = 0               # latest bet in this round
 
     def get_name(self):
         if not self._name:
@@ -96,6 +101,12 @@ class BaseAgent(object):
         return state, bet
 
     # the following are for game-agent interaction
+    def start_new_game(self):
+        self._hole_cards = []
+        self._community_cards = []
+        assert self._cum_amount == 0
+        assert self._latest_bet == 0
+
     def get_hole_cards(self, hold_cards):
         self._hole_cards = hold_cards
 

@@ -124,6 +124,7 @@ class NoLimitTexasGame(object):
         np.random.shuffle(self.total_cards)
         # pre-flop
         for n, agent in enumerate(agents):
+            agent.start_new_game()
             hole_cards = self.total_cards[n * 2: n * 2 + 2, :].tolist()
             agent.get_hole_cards(hole_cards)
             agent_cards.append(hole_cards)
@@ -144,7 +145,7 @@ class NoLimitTexasGame(object):
             return self.shut_down(agents, agent_cards, community_cards, context, is_verbose)
         # turn
         card_index = card_index + 3 + 1
-        community_cards.append(self.total_cards[card_index])
+        community_cards.append(self.total_cards[card_index].tolist())
         if is_verbose:
             print("Turn - Community cards: ", ' '.join(str(PokerCard(*c)) for c in community_cards))
         for agent in agents:
@@ -154,7 +155,7 @@ class NoLimitTexasGame(object):
             return self.shut_down(agents, agent_cards, community_cards, context, is_verbose)
         # river
         card_index = card_index + 1 + 1
-        community_cards.append(self.total_cards[card_index])
+        community_cards.append(self.total_cards[card_index].tolist())
         if is_verbose:
             print("River - Community cards: ", ' '.join(str(PokerCard(*c)) for c in community_cards))
         for agent in agents:
@@ -229,8 +230,9 @@ class NoLimitTexasGame(object):
                 if active_ready_num == context.get_active_num():
                     # num_active=0: all fold or all-in, 1: the active one has the largest bet
                     context.finish_a_scan(is_round_over=True, index=index)
-                    for agent in agents:
+                    for n, agent in enumerate(agents):
                         agent.round_over()
+                        assert agent._cum_amount == context.cum_bets[n]
                     return
             # new scan
             context.finish_a_scan(is_round_over=False)
