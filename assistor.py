@@ -4,6 +4,7 @@ import random
 from texas import monte_carlo
 from texas import judge
 from texas.poker import PokerCard
+from texas.direct_cmp import ApproxComparer
 
 
 if __name__ == "__main__":
@@ -38,10 +39,16 @@ if __name__ == "__main__":
             cards = total_cards[:2]
             args.auto_num -= 1
 
-        pr = simulator.get_pr(
+        pr1 = simulator.get_pr(
             [c.get_data() for c in cards[:2]],
             [c.get_data() for c in cards[2:]],
             player_num=args.player_num,
             trial_num=args.trial
         )
-        print(cards, "Winning pr:", pr)
+        comparer = ApproxComparer()
+        pr2 = comparer.get_pr(
+            [c.get_data() for c in cards[:2]],
+            [c.get_data() for c in cards[2:]],
+            player_num=args.player_num,
+        )
+        print(cards, "Winning pr:", pr1, pr2)
