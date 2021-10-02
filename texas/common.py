@@ -8,6 +8,15 @@ class TexasRound(enum.IntEnum):
     River = 3
 
 
+class TexasConst(object):
+    MIN_DIGIT = 1
+    TOTAL_NUM = 52
+    BEST_HAND_SIZE = 5
+    MAX_HAND_SIZE = 7
+    HOLE_SIZE = 2
+    MAX_COMMUNITY_SIZE = 5
+
+
 class AgentAction(enum.IntEnum):
     Blind = 0
     Fold = 1
