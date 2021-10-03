@@ -10,22 +10,15 @@ class RandomAgent(common.BaseAgent):
 
     def get_bet(self, open_bet, context, index):
         pr = self._rand.random()
-        if open_bet == 0:
-            if pr < 0.33:
-                return self._wrap_return(common.AgentAction.Check, 0)
-            if pr < 0.67:
-                return self._wrap_return(common.AgentAction.Bet, self._big_blind)
-            return self._wrap_return(common.AgentAction.Bet, self._big_blind * 2)
+        inner_action = common.InnerAction.Aggressive
         if pr < 0.33:
-            return self._wrap_return(common.AgentAction.Fold, self._latest_bet)
-        if pr < 0.67:
-            return self._wrap_return(common.AgentAction.Call, open_bet)
-        return self._wrap_return(common.AgentAction.Raise, open_bet * 2)
+            inner_action = common.InnerAction.Conservative
+        elif pr < 0.67:
+            inner_action = common.InnerAction.Normal
+        return self._wrap_return(*self._normalize_action_bet(inner_action, open_bet))
 
 
 class StaticAgent(common.BaseAgent):
-    TRIAL_NUM = 200
-
     def __init__(self, big_blind, total_amount, pr_calc, doubt_max_call=None):
         super().__init__(big_blind, total_amount)
         self.pr_calc = pr_calc
@@ -42,31 +35,23 @@ class StaticAgent(common.BaseAgent):
         if self._cache.is_valid(context.round):
             pr = self._cache.get_value()
         else:
-            pr = self.pr_calc.get_pr(self._hole_cards, self._community_cards, num, StaticAgent.TRIAL_NUM)
+            pr = self.pr_calc.get_pr(self._hole_cards, self._community_cards, num)
             self._cache.set_value(context.round, pr)
         assert context.latest_bets[index] == self._latest_bet
-        if pr < 1.0 / num:
-            if open_bet == 0:
-                return self._wrap_return(common.AgentAction.Check, 0)
-            else:
-                return self._wrap_return(common.AgentAction.Fold, self._latest_bet)
         if pr < 0.5:
-            if open_bet == 0:
-                return self._wrap_return(common.AgentAction.Check, 0)
-            if open_bet > 0:
-                if open_bet < self._doubt_max_call:
-                    return self._wrap_return(common.AgentAction.Call, open_bet)
-                else:
-                    return self._wrap_return(common.AgentAction.Fold, self._latest_bet)
-        # high rate to win
-        if open_bet == 0:
-            return self._wrap_return(common.AgentAction.Bet, self._big_blind)
-        return self._wrap_return(common.AgentAction.Raise, open_bet * 2)
+            if pr < 1.0 / num or open_bet >= self._doubt_max_call:
+                inner_action = common.InnerAction.Conservative
+            else:
+                inner_action = common.InnerAction.Normal
+        else:
+            if open_bet >= self._doubt_max_call or open_bet == 0:
+                inner_action = common.InnerAction.Normal
+            else:
+                inner_action = common.InnerAction.Aggressive
+        return self._wrap_return(*self._normalize_action_bet(inner_action, open_bet))
 
 
 class BraveAgent(common.BaseAgent):
-    TRIAL_NUM = 200
-
     def __init__(self, big_blind, total_amount, pr_calc):
         super().__init__(big_blind, total_amount)
         self.pr_calc = pr_calc
@@ -81,14 +66,11 @@ class BraveAgent(common.BaseAgent):
         if self._cache.is_valid(context.round):
             pr = self._cache.get_value()
         else:
-            pr = self.pr_calc.get_pr(self._hole_cards, self._community_cards, num, BraveAgent.TRIAL_NUM)
+            pr = self.pr_calc.get_pr(self._hole_cards, self._community_cards, num)
             self._cache.set_value(context.round, pr)
         assert context.latest_bets[index] == self._latest_bet
-        if pr < 1.5 / num:
-            if open_bet == 0:
-                return self._wrap_return(common.AgentAction.Check, 0)
-            else:
-                return self._wrap_return(common.AgentAction.Fold, self._latest_bet)
-        if open_bet == 0:
-            return self._wrap_return(common.AgentAction.Check, 0)
-        return self._wrap_return(common.AgentAction.Call, open_bet)
+        if pr < 1.0 / num:
+            inner_action = common.InnerAction.Conservative
+        else:
+            inner_action = common.InnerAction.Normal
+        return self._wrap_return(*self._normalize_action_bet(inner_action, open_bet))

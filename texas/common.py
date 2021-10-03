@@ -17,6 +17,17 @@ class TexasConst(object):
     MAX_COMMUNITY_SIZE = 5
 
 
+"""
+实际：保守fold/check，基础call/bet，激进/raise，非常激进/raise_more，后三种都有可能遇到all_in
+方案：内部一个状态，外部一个状态
+"""
+class InnerAction(enum.IntEnum):
+    Conservative = 0
+    Normal = 1
+    Aggressive = 2
+    Very_Aggressive = 3
+
+
 class AgentAction(enum.IntEnum):
     Blind = 0
     Fold = 1
@@ -98,6 +109,33 @@ class BaseAgent(object):
         if not self._name:
             return type(self).__name__ + str(self._agent_index)
         return self._name
+
+    def _normalize_action_bet(self, inner_action, open_bet):
+        """
+        Act normally
+        - do not raise more if there is no more information
+        - do not fold if not necessary
+        """
+        if open_bet == 0:
+            if inner_action == InnerAction.Conservative:
+                return AgentAction.Check, 0
+            if inner_action == InnerAction.Normal:
+                return AgentAction.Bet, self._big_blind
+            if inner_action == InnerAction.Aggressive:
+                return AgentAction.Bet, self._big_blind * 2
+            if inner_action == InnerAction.Very_Aggressive:
+                return AgentAction.Bet, self._big_blind * 4
+        else:
+            if inner_action == InnerAction.Conservative:
+                if self._latest_bet == open_bet:  # only big-blind can reach here
+                    return AgentAction.Call, self._latest_bet
+                return AgentAction.Fold, self._latest_bet,
+            if inner_action == InnerAction.Normal or self._latest_bet > 0:  # do not raise twice
+                return AgentAction.Call, open_bet,
+            if inner_action == InnerAction.Aggressive:
+                return AgentAction.Raise, open_bet * 2
+            if inner_action == InnerAction.Very_Aggressive:
+                return AgentAction.Raise_more, open_bet * 4
 
     def _wrap_return(self, action, bet):
         """
