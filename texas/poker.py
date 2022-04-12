@@ -37,6 +37,7 @@ class PokerDigit(object):
     K = 13
     Q = 12
     J = 11
+    A_MINUS = 1
 
     _digit_s = {
         14: "A",

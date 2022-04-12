@@ -48,11 +48,11 @@ class TexasJudgeTestCase(unittest.TestCase):
     def test_rank(self):
         judge = TexasJudge()
         ranks = judge.rank([x[0] for x in self.cards_levels])
-        self.assertEquals(list(ranks), self.cards_levels_ranks)
+        self.assertEqual(list(ranks), self.cards_levels_ranks)
         ranks = judge.rank([x[0] for x in self.dup_cards_levels])
-        self.assertEquals(list(ranks), self.dup_cards_levels_ranks)
+        self.assertEqual(list(ranks), self.dup_cards_levels_ranks)
         ranks = judge.rank([x[0] for x in self.two_cards_levels])
-        self.assertEquals(list(ranks), self.two_cards_levels_ranks)
+        self.assertEqual(list(ranks), self.two_cards_levels_ranks)
 
 
 if __name__ == "__main__":

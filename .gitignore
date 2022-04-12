@@ -131,3 +131,4 @@ dmypy.json
 # extra
 .idea
 nohup.out
+.DS_Store

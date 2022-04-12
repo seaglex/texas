@@ -8,6 +8,6 @@ class TexasGameTestCase(unittest.TestCase):
         judge = TexasJudge()
         game = texas_games.NoLimitTexasGame(judge)
         amounts = game._divide_the_money(500, [300, None, None, None], [0, 0, 1, 2])
-        self.assertEquals(list(amounts), [150, 350, 0, 0])
+        self.assertEqual(list(amounts), [150, 350, 0, 0])
         amounts = game._divide_the_money(500, [300, 400, 200, None], [0, 0, 1, 1])
-        self.assertEquals(list(amounts), [150, 250, 0, 100])
+        self.assertEqual(list(amounts), [150, 250, 0, 100])
