@@ -1,12 +1,7 @@
-import enum
 import numpy as np
 from collections import deque
 
-
-class GoPiece(enum.IntEnum):
-    Black = -1
-    White = 1
-    Empty = 0
+from .go_board import GoStone
 
 
 NUM_COMPENSATIONS = {
@@ -31,9 +26,9 @@ class GoJudge(object):
                 if markers[row][col] != 0:
                     continue
                 markers[row][col] = 1
-                if board[row][col] == GoPiece.White:
+                if board[row][col] == GoStone.White:
                     continue
-                if board[row][col] == GoPiece.Black:
+                if board[row][col] == GoStone.Black:
                     black_cnt += 1
                     continue
                 # empty
@@ -41,7 +36,7 @@ class GoJudge(object):
         return black_cnt
 
     def _count_empty_black(self, board, row, col, markers):
-        assert board[row][col] == GoPiece.Empty
+        assert board[row][col] == GoStone.Empty
         N = len(board)
         unhandled = deque([])
         is_black = False
@@ -51,36 +46,36 @@ class GoJudge(object):
         while len(unhandled) > 0:
             y, x = unhandled.popleft()
             if y > 0:
-                if board[y - 1][x] == GoPiece.Black:
+                if board[y - 1][x] == GoStone.Black:
                     is_black = True
-                elif board[y - 1][x] == GoPiece.White:
+                elif board[y - 1][x] == GoStone.White:
                     is_white = True
                 elif markers[y - 1][x] == 0:
                     unhandled.append((y - 1, x))
                     cnt += 1
                     markers[y - 1][x] = 1
             if y < N - 1:
-                if board[y + 1][x] == GoPiece.Black:
+                if board[y + 1][x] == GoStone.Black:
                     is_black = True
-                elif board[y + 1][x] == GoPiece.White:
+                elif board[y + 1][x] == GoStone.White:
                     is_white = True
                 elif markers[y + 1][x] == 0:
                     unhandled.append((y + 1, x))
                     cnt += 1
                     markers[y + 1][x] = 1
             if x > 0:
-                if board[y][x - 1] == GoPiece.Black:
+                if board[y][x - 1] == GoStone.Black:
                     is_black = True
-                elif board[y][x - 1] == GoPiece.White:
+                elif board[y][x - 1] == GoStone.White:
                     is_white = True
                 elif markers[y][x - 1] == 0:
                     unhandled.append((y, x - 1))
                     cnt += 1
                     markers[y][x - 1] = 1
             if x < N - 1:
-                if board[y][x + 1] == GoPiece.Black:
+                if board[y][x + 1] == GoStone.Black:
                     is_black = True
-                elif board[y][x + 1] == GoPiece.White:
+                elif board[y][x + 1] == GoStone.White:
                     is_white = True
                 elif markers[y][x + 1] == 0:
                     unhandled.append((y, x + 1))

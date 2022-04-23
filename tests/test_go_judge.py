@@ -1,21 +1,21 @@
 import unittest
 import numpy as np
 
-from go.go_judge import GoJudge, GoPiece
+from go.go_judge import GoJudge, GoStone
 
 
 class GoJudgeTestCase(unittest.TestCase):
     def setUp(self) -> None:
         empty_board = np.ones((9, 9))
-        empty_board *= GoPiece.Empty
+        empty_board *= GoStone.Empty
         self.empty_board = empty_board
 
-        row_board = np.ones((9, 9)) * GoPiece.Empty
+        row_board = np.ones((9, 9)) * GoStone.Empty
         for n in range(9):
-            row_board[3][n] = GoPiece.Black
-            row_board[6][n] = GoPiece.Black
-            row_board[7][n] = GoPiece.White
-        row_board[8][1] = GoPiece.White
+            row_board[3][n] = GoStone.Black
+            row_board[6][n] = GoStone.Black
+            row_board[7][n] = GoStone.White
+        row_board[8][1] = GoStone.White
         self.row_board = row_board
 
     def test_emtpy(self):
