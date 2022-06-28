@@ -1,9 +1,7 @@
 from __future__ import annotations
 from typing import List, Iterable, Tuple, Optional
 import copy
-import numpy as np
 
-from search.mcts import IGameState
 from .go_board import GoStone, GoBasicBoard
 from .go_judge import GoJudge
 from search import mcts
@@ -43,14 +41,12 @@ class GoState(mcts.IGameState):
         win = judge.get_black_win(self._board)
         return [win, 1 - win]
 
+    @staticmethod
+    def is_good_enough(score) -> bool:
+        return score > 0
+
     def clone(self) -> GoState:
         return copy.deepcopy(self)
 
-
-class GoGame(object):
-    def __init__(self, judge, num):
-        self._judge = judge
-        self._num = num
-
-    def run_a_round(self, agents):
-        return None
+    def to_str(self) -> str:
+        return self._board.to_str()

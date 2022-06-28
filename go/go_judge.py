@@ -19,11 +19,11 @@ class GoJudge(object):
     - 简单连通域算法（图广度搜索）
     """
     def count_black(self, board):
-        N = len(board) - 2
-        markers = np.zeros((N + 2, N + 2))
+        num = len(board) - 2
+        markers = np.zeros((num + 2, num + 2))
         black_cnt = 0
-        for row in range(1, N + 1):
-            for col in range(1, N + 1):
+        for row in range(1, num + 1):
+            for col in range(1, num + 1):
                 if markers[row][col] != 0:
                     continue
                 markers[row][col] = 1
@@ -33,12 +33,12 @@ class GoJudge(object):
                     black_cnt += 1
                     continue
                 # empty
-                black_cnt += self._count_empty_black(board, row, col, markers)
+                black_cnt += GoJudge._count_empty_black(board, row, col, markers)
         return black_cnt
 
-    def _count_empty_black(self, board, row: int, col: int, markers):
+    @staticmethod
+    def _count_empty_black(board, row: int, col: int, markers):
         assert board[row][col] == GoStone.Empty
-        N = len(board) - 2
         unhandled = deque([])
         is_black = False
         is_white = False

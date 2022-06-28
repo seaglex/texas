@@ -16,10 +16,10 @@ class GoBoardUnitTest(unittest.TestCase):
             board.put_stone((n, beg + 2), GoStone.Black)
         board.put_stone((beg + 3, beg + 0), GoStone.Black)
         board.put_stone((beg + 3, beg + 1), GoStone.Black)
-        board.print()
+        print(board.to_str())
         assert board.is_valid_move((beg + 0, beg + 0), GoStone.Black)
         board.put_stone((beg + 0, beg + 0), GoStone.Black)
-        board.print()
+        print(board.to_str())
         raw_board = board.get_board()
         assert (raw_board == GoStone.White).sum() == 0
         assert (raw_board == GoStone.Black).sum() == 7

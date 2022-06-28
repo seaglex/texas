@@ -239,8 +239,8 @@ class GoBasicBoard(object):
     def num(self):
         return self._num
 
-    def print(self):
+    def to_str(self):
+        lines = []
         for x in range(self._num + 2):
-            for y in range(self._num + 2):
-                print(GoStone.format(self._board[x, y]), end='')
-            print()
+            lines.append(''.join(GoStone.format(self._board[x, y]) for y in range(self._num + 2)))
+        return '\n'.join(lines)
