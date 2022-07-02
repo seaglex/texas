@@ -8,7 +8,7 @@ from .go_board import GoStone, GoBoardUtil
 NUM_COMPENSATIONS: Final[List[Tuple[int, float]]] = [
     (9, 2.75),
     (13, 2.75),
-    (19, 3.74),
+    (19, 3.75),
 ]
 
 

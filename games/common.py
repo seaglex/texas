@@ -12,6 +12,9 @@ class IGameState(object):
     def get_valid_actions(self) -> List[Any]:
         raise NotImplementedError()
 
+    def is_valid_action(self, action: Any):
+        raise NotImplementedError()
+
     def apply_action(self, action) -> type(None):
         raise NotImplementedError()
 

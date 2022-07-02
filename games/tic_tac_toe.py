@@ -54,6 +54,10 @@ class TicTacToeState(TicTacToeBoard, IGameState):
                     actions.append((x, y))
         return actions
 
+    def is_valid_action(self, action: Action):
+        x, y = action
+        return 0 <= x < TicTacToeBoard.NUM and 0 <= y < TicTacToeBoard.NUM and self.board[x, y] == '.'
+
     def apply_action(self, action: Action) -> type(None):
         assert self.board[action] == '.'
         mark = 'x' if self._player == 0 else 'o'
@@ -81,25 +85,3 @@ class TicTacToeState(TicTacToeBoard, IGameState):
 
     def to_str(self) -> str:
         return super(TicTacToeState, self).to_str()
-
-
-class HumanAgent(IAgent):
-    def __init__(self, player_index: int, state: IGameState):
-        self._player_index = player_index
-        self._state = state
-
-    def get_name(self) -> str:
-        return "Human-" + str(self._player_index)
-
-    def set_index(self, index: int) -> type(None):
-        self._player_index = index
-
-    def step(self) -> Action:
-        coords = list(int(x) for x in input("input x,y ").split(","))
-        action = coords[0], coords[1]
-        self._state.apply_action(action)
-        return action
-
-    def inform_action(self, other_player: int, action: Action) -> type(None):
-        assert self._player_index != other_player
-        self._state.apply_action(action)

@@ -71,6 +71,12 @@ class BasicChain(object):
         self._stone_coordinates.extend(another._stone_coordinates)
         self._liberties.update(another._liberties)
         self._oppo_neighbors.update(another._oppo_neighbors)
+        for oppo_neighbor in another._oppo_neighbors:
+            oppo_neighbor._change_oppo(another, self)
+
+    def _change_oppo(self, src: BasicChain, dst: BasicChain):
+        self._oppo_neighbors.remove(src)
+        self._oppo_neighbors.add(dst)
 
     def join(self, stone: GoStone, coordinate: Coordinate,
              liberties: Iterable[Coordinate], oppo_neighbors: Iterable[BasicChain],
@@ -94,7 +100,7 @@ class BasicChain(object):
 
     def recheck_liberties(self, board: np.array) -> type(None):
         """
-        A slow implementation, for it's only needed in Atari and Atari is rare
+        A slow implementation, for it's only needed in capture and capture is rare
         """
         for coord in self._stone_coordinates:
             for nx, ny in GoBoardUtil.neighbors(*coord):
@@ -132,12 +138,12 @@ class BasicChain(object):
     @staticmethod
     def having_liberty_minus(chains: Iterable[BasicChain], coordinate: Coordinate) -> bool:
         """
-        evaluate liberties of chains with 1 more opponent stone
+        evaluate liberties of **ALL** chains with 1 more opponent stone
         """
         for c in chains:
-            if len(c._liberties) >= 2 or coordinate not in c._liberties:
-                return True
-        return False
+            if len(c._liberties) <= 1 and coordinate in c._liberties:
+                return False
+        return True
 
 
 class GoBasicBoard(object):
@@ -145,6 +151,7 @@ class GoBasicBoard(object):
     Basic implementation, w/o acceleration
     Boundary: use guard stones as boundary to avoid if/else
     Chain: joined stones and their liberties
+    ko is ignored（全局同型没有禁止）
     """
     def __init__(self, num: int):
         # empty board
@@ -158,6 +165,12 @@ class GoBasicBoard(object):
         self._chains = np.full((num + 2, num + 2), None, dtype=BasicChain)
 
     def is_valid_move(self, pos: tuple, stone: GoStone):
+        """
+        尚未考虑全局同型（打劫相关问题）
+        :param pos:
+        :param stone:
+        :return:
+        """
         my_coord = pos
         if self._board[my_coord] != GoStone.Empty:
             return False
@@ -242,5 +255,5 @@ class GoBasicBoard(object):
     def to_str(self):
         lines = []
         for x in range(self._num + 2):
-            lines.append(''.join(GoStone.format(self._board[x, y]) for y in range(self._num + 2)))
+            lines.append(' '.join(GoStone.format(self._board[x, y]) for y in range(self._num + 2)))
         return '\n'.join(lines)
