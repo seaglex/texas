@@ -80,7 +80,6 @@ class Mcts(object):
         for itr in range(self._max_simulations):
             # expand & select
             path, working_state = self._apply_tree_policy(root, state)
-            # print(itr, [x.action[0] * 3 + x.action[1] for x in path[1:]])
             solved = False
             if working_state.is_terminal():
                 rewards = working_state.get_rewards()

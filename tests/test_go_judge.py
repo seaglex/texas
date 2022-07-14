@@ -1,13 +1,13 @@
 import unittest
 
 from go.go_judge import GoJudge
-from go.go_board import GoStone, GoBoardUtil
+from go.go_basic_board import GoStone, GoBasicBoardUtil
 
 
 class GoJudgeTestCase(unittest.TestCase):
     def setUp(self) -> None:
-        self.empty_board = GoBoardUtil.get_empty_board(9)
-        simple_board = GoBoardUtil.get_empty_board(9)
+        self.empty_board = GoBasicBoardUtil.get_empty_board(9)
+        simple_board = GoBasicBoardUtil.get_empty_board(9)
         beg = 1
         for n in range(beg, beg + 9):
             simple_board[beg + 3][n] = GoStone.Black

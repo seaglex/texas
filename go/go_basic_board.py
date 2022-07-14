@@ -1,37 +1,11 @@
 from __future__ import annotations
 import numpy as np
-import enum
-from typing import Tuple, List, Set, Iterable
+from typing import List, Set, Iterable
+
+from .go_common import GoStone, IGoBoard, Coordinate, T_Stone
 
 
-Coordinate = Tuple[int, int]
-
-
-class GoStone(enum.IntEnum):
-    Empty = 0
-    White = 1
-    Black = 2
-    Guard = 3
-
-    @staticmethod
-    def get_opponent(stone):
-        if stone == GoStone.White:
-            return GoStone.Black
-        if stone == GoStone.Black:
-            return GoStone.White
-        raise Exception("invalid stone")
-
-    @staticmethod
-    def format(stone: GoStone):
-        return {
-            GoStone.Empty: ".",
-            GoStone.White: "o",
-            GoStone.Black: "x",
-            GoStone.Guard: " ",
-        }.get(stone, "?")
-
-
-class GoBoardUtil(object):
+class GoBasicBoardUtil(object):
     @staticmethod
     def get_empty_board(num):
         board = np.full((num + 2, num + 2), GoStone.Empty)
@@ -50,13 +24,13 @@ class BasicChain(object):
     """
     Chain: joined stones and their liberties
     """
-    def __init__(self, stone: GoStone) -> type(None):
-        self._stone: GoStone = stone
+    def __init__(self, stone: T_Stone) -> type(None):
+        self._stone: T_Stone = stone
         self._stone_coordinates: List[Coordinate] = []
         self._liberties: Set[Coordinate] = set()
         self._oppo_neighbors: Set[BasicChain] = set()
 
-    def append_stone(self, stone: GoStone, coordinate: Coordinate,
+    def append_stone(self, stone: T_Stone, coordinate: Coordinate,
                      liberties: Iterable[Coordinate], oppo_neighbors: Iterable[BasicChain]) -> type(None):
         assert stone == self._stone
         self._stone_coordinates.append(coordinate)
@@ -78,7 +52,7 @@ class BasicChain(object):
         self._oppo_neighbors.remove(src)
         self._oppo_neighbors.add(dst)
 
-    def join(self, stone: GoStone, coordinate: Coordinate,
+    def join(self, stone: T_Stone, coordinate: Coordinate,
              liberties: Iterable[Coordinate], oppo_neighbors: Iterable[BasicChain],
              other_chains: Iterable[BasicChain]
              ):
@@ -103,7 +77,7 @@ class BasicChain(object):
         A slow implementation, for it's only needed in capture and capture is rare
         """
         for coord in self._stone_coordinates:
-            for nx, ny in GoBoardUtil.neighbors(*coord):
+            for nx, ny in GoBasicBoardUtil.neighbors(*coord):
                 if board[nx, ny] == GoStone.Empty:
                     self._liberties.add((nx, ny))
         return
@@ -121,9 +95,11 @@ class BasicChain(object):
         For more debugging information
         """
         if self._stone_coordinates:
-            return '+'.join(["C", self._stone.name, str(self._stone_coordinates[0]), str(len(self._liberties))])
+            return '+'.join(["C", GoStone.get_name(self._stone),
+                             str(self._stone_coordinates[0]), str(len(self._liberties))
+                             ])
         else:
-            return "+".join(["C", self._stone.name])
+            return "+".join(["C", GoStone.get_name(self._stone)])
 
     @staticmethod
     def having_liberty_plus(chains: Iterable[BasicChain], coordinate: Coordinate) -> bool:
@@ -146,7 +122,7 @@ class BasicChain(object):
         return True
 
 
-class GoBasicBoard(object):
+class GoBasicBoard(IGoBoard):
     """
     Basic implementation, w/o acceleration
     Boundary: use guard stones as boundary to avoid if/else
@@ -164,7 +140,7 @@ class GoBasicBoard(object):
         # their chains
         self._chains = np.full((num + 2, num + 2), None, dtype=BasicChain)
 
-    def is_valid_move(self, pos: tuple, stone: GoStone):
+    def is_valid_move(self, pos: tuple, stone: T_Stone):
         """
         尚未考虑全局同型（打劫相关问题）
         :param pos:
@@ -178,7 +154,7 @@ class GoBasicBoard(object):
 
         same_chains = set()
         oppo_chains = set()
-        for nx, ny in GoBoardUtil.neighbors(*my_coord):
+        for nx, ny in GoBasicBoardUtil.neighbors(*my_coord):
             neighbor = self._board[nx, ny]
             if neighbor == GoStone.Empty:
                 return True
@@ -193,7 +169,7 @@ class GoBasicBoard(object):
             return True
         return False
 
-    def put_stone(self, pos: Coordinate, stone: GoStone) -> None:
+    def put_stone(self, pos: Coordinate, stone: T_Stone) -> None:
         my_coord = pos
         assert self._board[my_coord] == GoStone.Empty
         opponent_stone = GoStone.get_opponent(stone)
@@ -201,7 +177,7 @@ class GoBasicBoard(object):
         same_chains = set()
         oppo_chains = set()
         liberties = []
-        for nx, ny in GoBoardUtil.neighbors(*my_coord):
+        for nx, ny in GoBasicBoardUtil.neighbors(*my_coord):
             neighbor = self._board[nx, ny]
             if neighbor == stone:
                 same_chains.add(self._chains[nx, ny])
@@ -242,7 +218,7 @@ class GoBasicBoard(object):
     def get_board(self):
         return self._board
 
-    def iter_valid_moves(self, stone: GoStone):
+    def iter_valid_moves(self, stone: T_Stone):
         for x in range(1, self._num + 1):
             for y in range(1, self._num + 1):
                 if self._board[x, y] == GoStone.Empty and self.is_valid_move((x, y), stone):
@@ -257,3 +233,12 @@ class GoBasicBoard(object):
         for x in range(self._num + 2):
             lines.append(' '.join(GoStone.format(self._board[x, y]) for y in range(self._num + 2)))
         return '\n'.join(lines)
+
+    def check_consistence(self) -> (bool, str):
+        return True, ""
+
+    def put_stone_by_coordinate(self, coordinate: Coordinate, stone: T_Stone) -> None:
+        self.put_stone(coordinate, stone)
+
+    def is_valid_move_by_coordinate(self, coordinate: Coordinate, stone: T_Stone) -> bool:
+        return self.is_valid_move(coordinate, stone)

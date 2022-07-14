@@ -3,7 +3,8 @@ import numpy as np
 
 from games.simple_impl import MctsAgent, SequentialGame, RandomAgent, HumanAgent
 from go.go_game import GoState
-from go.go_board import GoBasicBoard
+from go.go_basic_board import GoBasicBoard
+from go.go_fast_board import GoFastBoard
 from search.mcts import Mcts
 from search.evaluators import RandomRolloutEvaluator
 
@@ -31,7 +32,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     def state_factory_method():
-        return GoState(GoBasicBoard(19))
+        return GoState(GoFastBoard(19))
     rng = np.random.RandomState(0)
     mcts_core = Mcts(RandomRolloutEvaluator(1, rng), puct_const=2.0, max_simulations=1000, random_state=rng)
     agent0 = MctsAgent(0, mcts_core, state_factory_method())

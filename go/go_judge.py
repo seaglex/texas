@@ -2,7 +2,7 @@ import numpy as np
 from collections import deque
 from typing import List, Tuple, Final
 
-from .go_board import GoStone, GoBoardUtil
+from .go_basic_board import GoStone, GoBasicBoardUtil
 
 
 NUM_COMPENSATIONS: Final[List[Tuple[int, float]]] = [
@@ -46,7 +46,7 @@ class GoJudge(object):
         cnt = 1
         while len(unhandled) > 0:
             coord = unhandled.popleft()
-            for nx, ny in GoBoardUtil.neighbors(*coord):
+            for nx, ny in GoBasicBoardUtil.neighbors(*coord):
                 if board[nx][ny] == GoStone.Black:
                     is_black = True
                 elif board[nx][ny] == GoStone.White:

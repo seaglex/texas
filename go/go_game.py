@@ -1,8 +1,9 @@
 from __future__ import annotations
 from typing import List, Tuple, Optional
 import copy
+import datetime as dt
 
-from .go_board import GoStone, GoBasicBoard
+from .go_common import GoStone, IGoBoard
 from .go_judge import GoJudge
 from games.common import IAgent, IGameState
 
@@ -11,7 +12,7 @@ Action = Optional[Tuple[int, int]]
 
 
 class GoState(IGameState):
-    def __init__(self, board: GoBasicBoard, player_index=0, stone=GoStone.Black):
+    def __init__(self, board: IGoBoard, player_index=0, stone=GoStone.Black):
         self._player_index = player_index
         self._stone = stone
         self._board = board
@@ -39,6 +40,7 @@ class GoState(IGameState):
             return
         self._pass_cnt = 0
         self._board.put_stone(action, self._stone)
+
         self._player_index = 1 - self._player_index
         self._stone = GoStone.get_opponent(self._stone)
         return
