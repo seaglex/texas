@@ -1,6 +1,6 @@
 from __future__ import annotations
 import numpy as np
-from typing import Any, Iterable, Tuple
+from typing import Any, Tuple, List
 
 
 Coordinate = Tuple[int, int]
@@ -52,7 +52,10 @@ class IGoBoard(object):
     def put_stone(self, pos: Any, stone: T_Stone) -> None:
         raise NotImplementedError()
 
-    def iter_valid_moves(self, stone: T_Stone) -> Iterable[Any]:
+    def iter_valid_moves(self, stone: T_Stone) -> List[Any]:
+        raise NotImplementedError()
+
+    def get_pass_move(self) -> Any:
         raise NotImplementedError()
 
     def get_board(self) -> np.array:

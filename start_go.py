@@ -32,7 +32,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     def state_factory_method():
-        return GoState(GoFastBoard(19))
+        return GoState(GoFastBoard(9))
     rng = np.random.RandomState(0)
     mcts_core = Mcts(RandomRolloutEvaluator(1, rng), puct_const=2.0, max_simulations=1000, random_state=rng)
     agent0 = MctsAgent(0, mcts_core, state_factory_method())

@@ -60,6 +60,8 @@ class GoFastBoard(IGoBoard):
     chain_head: 统计信息，FastChainStat
     ko is ignored（全局同型没有禁止）
     """
+    PASS_INDEX = 0
+
     def __init__(self, num: int):
         self._num = num + 2  # 包含guard
         board_size = self._num ** 2
@@ -120,14 +122,19 @@ class GoFastBoard(IGoBoard):
     def _get_index(self, pos: Coordinate) -> BoardIndex:
         return pos[0] * self._num + pos[1]
 
-    def iter_valid_moves(self, stone: T_Stone) -> Iterable[BoardIndex]:
+    def iter_valid_moves(self, stone: T_Stone) -> List[BoardIndex]:
         # Warning: NOT a good design, just to reduce time
         # cache _iter_indexes()
         # use const GO_STONE_EMPTY instead of GoStone.Empty
+        actions = []
         for index in self._board_indexes:
             if self._board[index] == GO_STONE_EMPTY and self.is_valid_move(index, stone):
-                yield index
-        return
+                actions.append(index)
+        actions.append(GoFastBoard.PASS_INDEX)
+        return actions
+
+    def get_pass_move(self) -> BoardIndex:
+        return GoFastBoard.PASS_INDEX
 
     def is_valid_move(self, index: BoardIndex, stone: T_Stone) -> bool:
         """
@@ -136,6 +143,8 @@ class GoFastBoard(IGoBoard):
         :param stone:
         :return:
         """
+        if index == GoFastBoard.PASS_INDEX:
+            return True
         if self._board[index] != GO_STONE_EMPTY:
             return False
         if self._chain_head[index].num_pseudo_liberties > 0:
@@ -149,6 +158,8 @@ class GoFastBoard(IGoBoard):
         return False
 
     def put_stone(self, index: BoardIndex, stone: T_Stone) -> None:
+        if index == GoFastBoard.PASS_INDEX:
+            return
         assert self._board[index] == GO_STONE_EMPTY
         self._join_chains(index, stone)
         self._remove_neighbor_liberties(index)

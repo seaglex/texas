@@ -1,8 +1,11 @@
 from __future__ import annotations
 import numpy as np
-from typing import List, Set, Iterable
+from typing import List, Set, Iterable, Optional
 
 from .go_common import GoStone, IGoBoard, Coordinate, T_Stone
+
+
+Go_Move = Optional[Coordinate]
 
 
 class GoBasicBoardUtil(object):
@@ -140,13 +143,15 @@ class GoBasicBoard(IGoBoard):
         # their chains
         self._chains = np.full((num + 2, num + 2), None, dtype=BasicChain)
 
-    def is_valid_move(self, pos: tuple, stone: T_Stone):
+    def is_valid_move(self, pos: Go_Move, stone: T_Stone):
         """
         尚未考虑全局同型（打劫相关问题）
         :param pos:
         :param stone:
         :return:
         """
+        if pos is None:
+            return True
         my_coord = pos
         if self._board[my_coord] != GoStone.Empty:
             return False
@@ -169,7 +174,9 @@ class GoBasicBoard(IGoBoard):
             return True
         return False
 
-    def put_stone(self, pos: Coordinate, stone: T_Stone) -> None:
+    def put_stone(self, pos: Go_Move, stone: T_Stone) -> None:
+        if pos is None:
+            return
         my_coord = pos
         assert self._board[my_coord] == GoStone.Empty
         opponent_stone = GoStone.get_opponent(stone)
@@ -219,11 +226,16 @@ class GoBasicBoard(IGoBoard):
         return self._board
 
     def iter_valid_moves(self, stone: T_Stone):
+        moves = []
         for x in range(1, self._num + 1):
             for y in range(1, self._num + 1):
                 if self._board[x, y] == GoStone.Empty and self.is_valid_move((x, y), stone):
-                    yield x, y
-        return
+                    moves.append((x, y))
+        moves.append(None)
+        return moves
+
+    def get_pass_move(self) -> Go_Move:
+        return None
 
     def num(self):
         return self._num

@@ -1,14 +1,13 @@
 from __future__ import annotations
-from typing import List, Tuple, Optional
+from typing import List, Any
 import copy
-import datetime as dt
 
 from .go_common import GoStone, IGoBoard
 from .go_judge import GoJudge
-from games.common import IAgent, IGameState
+from games.common import IGameState
 
 
-Action = Optional[Tuple[int, int]]
+Action = Any
 
 
 class GoState(IGameState):
@@ -18,22 +17,22 @@ class GoState(IGameState):
         self._board = board
         self._pass_cnt = 0
         self._move_cnt = 0
+        # cache
         self._max_move_count = board.num() ** 2 * 2
+        self._pass_action = board.get_pass_move()
 
     def get_current_player(self) -> int:
         return self._player_index
 
     def get_valid_actions(self) -> List[Action]:
-        actions = list(self._board.iter_valid_moves(self._stone))
-        actions.append(None)
-        return actions
+        return self._board.iter_valid_moves(self._stone)
 
     def is_valid_action(self, action):
-        return action is None or self._board.is_valid_move(action, self._stone)
+        return self._board.is_valid_move(action, self._stone)
 
     def apply_action(self, action: Action) -> type(None):
         self._move_cnt += 1
-        if action is None:  # pass
+        if action == self._pass_action:  # pass
             self._pass_cnt += 1
             self._player_index = 1 - self._player_index
             self._stone = GoStone.get_opponent(self._stone)
