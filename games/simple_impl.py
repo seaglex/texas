@@ -75,10 +75,15 @@ class SequentialGame(object):
         self._state_factory_method = state_factory_method
 
     def run_game(self, agents: List[IAgent], verbose=False):
+        beg = dt.datetime.now()
         total_counts = [0] * len(agents)
         total_seconds = [0.0] * len(agents)
         game_state = self._state_factory_method()
+        if verbose:
+            print("initialize {0:.2f}s".format((dt.datetime.now() - beg).total_seconds()))
+        cnt = 0
         while not game_state.is_terminal():
+            cnt += 1
             player = game_state.get_current_player()
             beg = dt.datetime.now()
             action = agents[player].step()
@@ -91,7 +96,7 @@ class SequentialGame(object):
                     continue
                 agent.inform_action(player, action)
             if verbose:
-                print(agents[player].get_name(), action,
+                print("step", cnt, agents[player].get_name(), action,
                       "time {0:.2f}s (avg {1:.2f}s)".format(seconds, total_seconds[player]/total_counts[player]))
                 print(game_state.to_str())
                 print()

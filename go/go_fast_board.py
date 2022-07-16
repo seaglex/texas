@@ -15,6 +15,9 @@ from .go_common import GoStone, IGoBoard, Coordinate, T_Stone
 BoardIndex = int
 
 
+GO_STONE_EMPTY = GoStone.Empty
+
+
 class FastChainStat(object):
     """
     Chain统计信息
@@ -60,12 +63,15 @@ class GoFastBoard(IGoBoard):
     def __init__(self, num: int):
         self._num = num + 2  # 包含guard
         board_size = self._num ** 2
-        self._board = [GoStone.Empty] * board_size
+        self._board = [GO_STONE_EMPTY] * board_size
         self._chain_next = [0] * board_size
-        # 非常多的chain-head，指向了别处
-        self._chain_head: List[FastChainStat] = [None] * (self._num ** 2)
+        # 一条chain的chain-head指向同一处
+        self._chain_head: List[FastChainStat] = [None] * board_size
         self._init_guard()
         self._init_chain()
+        self._board_indexes: List[BoardIndex] = []
+        for index in self._iter_indexes():
+            self._board_indexes.append(index)
 
     def _init_guard(self):
         self._board[:self._num] = [GoStone.Guard] * self._num
@@ -92,7 +98,7 @@ class GoFastBoard(IGoBoard):
     def _get_emtpy_chain_stat(self, index: BoardIndex) -> FastChainStat:
         chain_head = FastChainStat(index)
         for n in self._neighbors(index):
-            if self._board[n] == GoStone.Empty:
+            if self._board[n] == GO_STONE_EMPTY:
                 chain_head.add_liberty(n)
         return chain_head
 
@@ -103,15 +109,25 @@ class GoFastBoard(IGoBoard):
         yield index + self._num
 
     def _iter_indexes(self) -> Iterable[BoardIndex]:
-        base = self._num
-        for row in range(1, self._num - 1):
-            for col in range(1, self._num - 1):
-                yield base + col
-            base += self._num
+        index = self._num + 1
+        for row in range(self._num - 2):
+            for col in range(self._num - 2):
+                yield index
+                index += 1
+            index += 2
         return
 
     def _get_index(self, pos: Coordinate) -> BoardIndex:
         return pos[0] * self._num + pos[1]
+
+    def iter_valid_moves(self, stone: T_Stone) -> Iterable[BoardIndex]:
+        # Warning: NOT a good design, just to reduce time
+        # cache _iter_indexes()
+        # use const GO_STONE_EMPTY instead of GoStone.Empty
+        for index in self._board_indexes:
+            if self._board[index] == GO_STONE_EMPTY and self.is_valid_move(index, stone):
+                yield index
+        return
 
     def is_valid_move(self, index: BoardIndex, stone: T_Stone) -> bool:
         """
@@ -120,7 +136,7 @@ class GoFastBoard(IGoBoard):
         :param stone:
         :return:
         """
-        if self._board[index] != GoStone.Empty:
+        if self._board[index] != GO_STONE_EMPTY:
             return False
         if self._chain_head[index].num_pseudo_liberties > 0:
             return True
@@ -133,7 +149,7 @@ class GoFastBoard(IGoBoard):
         return False
 
     def put_stone(self, index: BoardIndex, stone: T_Stone) -> None:
-        assert self._board[index] == GoStone.Empty
+        assert self._board[index] == GO_STONE_EMPTY
         self._join_chains(index, stone)
         self._remove_neighbor_liberties(index)
         self._capture_dead_chains(index, stone)
@@ -195,7 +211,7 @@ class GoFastBoard(IGoBoard):
         chain_head = self._chain_head[index]
         cur = index
         while True:
-            self._board[cur] = GoStone.Empty
+            self._board[cur] = GO_STONE_EMPTY
             for n in self._neighbors(cur):
                 if self._chain_head[n] == chain_head:
                     continue
@@ -210,12 +226,6 @@ class GoFastBoard(IGoBoard):
 
     def get_board(self) -> np.array:
         return np.array(self._board).reshape((self._num, self._num))
-
-    def iter_valid_moves(self, stone: T_Stone) -> Iterable[BoardIndex]:
-        for index in self._iter_indexes():
-            if self.is_valid_move(index, stone):
-                yield index
-        return
 
     def num(self) -> int:
         return self._num - 2
@@ -242,7 +252,7 @@ class GoFastBoard(IGoBoard):
             if index in checked_indexes:
                 continue
             chain_head = self._chain_head[index]
-            if chain_head.num_pseudo_liberties == 0 and self._board[index] != GoStone.Empty:
+            if chain_head.num_pseudo_liberties == 0 and self._board[index] != GO_STONE_EMPTY:
                 return False, "Chain({0}) w/o liberties".format(index)
             cur = index
             chain_len = 0
@@ -253,14 +263,14 @@ class GoFastBoard(IGoBoard):
                     return False, "Chain heads diverge {0}/{1}".format(index, cur)
                 chain_len += 1
                 for n in self._neighbors(cur):
-                    if self._board[n] == GoStone.Empty:
+                    if self._board[n] == GO_STONE_EMPTY:
                         chain_pseudo_liberties += 1
                         liberties.add(n)
                 checked_indexes.add(cur)
                 cur = self._chain_next[cur]
                 if cur == index:
                     break
-            if self._board[index] != GoStone.Empty and ((len(liberties) == 1) ^ (chain_head.in_atari())):
+            if self._board[index] != GO_STONE_EMPTY and ((len(liberties) == 1) ^ (chain_head.in_atari())):
                 return False, "Chain({0}) wrong atari state".format(index)
             if chain_len != chain_head.num_stones:
                 return False, "Chain({0}) stones {1}, expecting {2}".format(index, chain_len, chain_head.num_stones)
