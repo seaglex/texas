@@ -32,5 +32,5 @@ if __name__ == "__main__":
     # agent1 = MctsAgent(1, mcts_core, state_factory_method())
     # agent1 = RandomAgent(1, state_factory_method(), rng)
     agent1 = TicTacToeHumanAgent(1, state_factory_method())
-    game = SequentialGame(state_factory_method)
-    game.run_game([agent0, agent1], True)
+    game = SequentialGame()
+    game.run_game(state_factory_method(), [agent0, agent1], True)

@@ -71,14 +71,11 @@ class HumanAgent(IAgent):
 
 
 class SequentialGame(object):
-    def __init__(self, state_factory_method):
-        self._state_factory_method = state_factory_method
-
-    def run_game(self, agents: List[IAgent], verbose=False):
+    @staticmethod
+    def run_game(game_state: IGameState, agents: List[IAgent], verbose=False):
         beg = dt.datetime.now()
         total_counts = [0] * len(agents)
         total_seconds = [0.0] * len(agents)
-        game_state = self._state_factory_method()
         actions = []
         if verbose:
             print("initialize {0:.2f}s".format((dt.datetime.now() - beg).total_seconds()))
