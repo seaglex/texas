@@ -21,7 +21,9 @@ class GoHumanAgent(HumanAgent):
         while True:
             action_str = input("input x,y or empty ")
             if not action_str:
-                return None
+                if self._is_coordinate:
+                    return None
+                return GoFastBoard.PASS_INDEX
             else:
                 try:
                     action = tuple(int(x) for x in action_str.split(","))
