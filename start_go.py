@@ -2,6 +2,7 @@ import argparse
 import numpy as np
 
 from games.simple_impl import MctsAgent, SequentialGame, RandomAgent, HumanAgent
+from go.manual_agents import SimpleAgentV1
 from go.go_game import GoState, IGameState
 from go.go_basic_board import GoBasicBoard
 from go.go_fast_board import GoFastBoard
@@ -41,12 +42,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     def state_factory_method():
-        return GoState(GoFastBoard(9))
+        return GoState(GoBasicBoard(9))
     rng = np.random.RandomState(0)
     mcts_core = Mcts(RandomRolloutEvaluator(1, rng), puct_const=2.0, max_simulations=1000, random_state=rng)
-    agent0 = MctsAgent(0, mcts_core, state_factory_method())
+    # agent0 = MctsAgent(0, mcts_core, state_factory_method())
+    agent0 = SimpleAgentV1(0, 9)
     # agent1 = MctsAgent(1, mcts_core, state_factory_method())
     # agent1 = RandomAgent(1, state_factory_method(), rng)
-    agent1 = GoHumanAgent(1, state_factory_method(), 9, False)
+    agent1 = GoHumanAgent(1, state_factory_method(), 9, True)
     game = SequentialGame()
     game.run_game(state_factory_method(), [agent0, agent1], True)

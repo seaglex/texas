@@ -5,7 +5,7 @@ from typing import List, Set, Iterable, Optional
 from .go_common import GoStone, IGoBoard, Coordinate, T_Stone
 
 
-Go_Move = Optional[Coordinate]
+GoMove = Optional[Coordinate]
 
 
 class GoBasicBoardUtil(object):
@@ -104,6 +104,16 @@ class BasicChain(object):
         else:
             return "+".join(["C", GoStone.get_name(self._stone)])
 
+    # information
+    def get_liberty_stone_num(self):
+        return len(self._liberties), len(self._stone_coordinates)
+
+    def get_liberties(self):
+        return self._liberties
+
+    def get_one_liberty(self):
+        return list(self._liberties)[0]
+
     @staticmethod
     def having_liberty_plus(chains: Iterable[BasicChain], coordinate: Coordinate) -> bool:
         """
@@ -143,7 +153,8 @@ class GoBasicBoard(IGoBoard):
         # their chains
         self._chains = np.full((num + 2, num + 2), None, dtype=BasicChain)
 
-    def is_valid_move(self, pos: Go_Move, stone: T_Stone):
+    # board operation
+    def is_valid_move(self, pos: GoMove, stone: T_Stone):
         """
         尚未考虑全局同型（打劫相关问题）
         :param pos:
@@ -174,7 +185,7 @@ class GoBasicBoard(IGoBoard):
             return True
         return False
 
-    def put_stone(self, pos: Go_Move, stone: T_Stone) -> None:
+    def put_stone(self, pos: GoMove, stone: T_Stone) -> None:
         if pos is None:
             return
         my_coord = pos
@@ -234,7 +245,7 @@ class GoBasicBoard(IGoBoard):
         moves.append(None)
         return moves
 
-    def get_pass_move(self) -> Go_Move:
+    def get_pass_move(self) -> GoMove:
         return None
 
     def num(self):
@@ -246,11 +257,155 @@ class GoBasicBoard(IGoBoard):
             lines.append(' '.join(GoStone.format(self._board[x, y]) for y in range(self._num + 2)))
         return '\n'.join(lines)
 
+    # self-check
     def check_consistence(self) -> (bool, str):
         return True, ""
 
+    # coordinate operation
     def put_stone_by_coordinate(self, coordinate: Coordinate, stone: T_Stone) -> None:
         self.put_stone(coordinate, stone)
 
     def is_valid_move_by_coordinate(self, coordinate: Coordinate, stone: T_Stone) -> bool:
         return self.is_valid_move(coordinate, stone)
+
+    # information
+    def test_filling_liberty(self, chain: BasicChain, my_coord: Coordinate) -> int:
+        """
+        Test the liberty number if one liberty is filled by the same party
+        :return: the liberty number change
+        """
+        stone = chain._stone
+        assert self._board[my_coord] == GoStone.Empty
+
+        same_chains = set()
+        liberties = []
+        for nx, ny in GoBasicBoardUtil.neighbors(*my_coord):
+            neighbor = self._board[nx, ny]
+            if neighbor == stone:
+                same_chains.add(self._chains[nx, ny])
+            elif neighbor == GoStone.Empty:
+                liberties.append((nx, ny))
+        # 连: join the chains
+        new_liberties = chain.get_liberties().union(liberties)
+        for chain in same_chains:
+            new_liberties.update(chain.get_liberties())
+        new_liberties.remove(my_coord)
+        return len(new_liberties)
+
+    def is_emtpy(self, my_coord: Coordinate) -> bool:
+        return self._board[my_coord[0], my_coord[1]] == GoStone.Empty
+
+    def test_liberty(self, my_coord: Coordinate, stone: T_Stone) -> int:
+        """
+        :return: the number of liberties
+        """
+        liberty_num = 0
+        for nx, ny in GoBasicBoardUtil.neighbors(*my_coord):
+            neighbor = self._board[nx, ny]
+            if neighbor == GoStone.Empty:
+                liberty_num += 1
+        return liberty_num
+
+
+class GoBasicSuggester(object):
+    @staticmethod
+    def get_static_suggestion(stone: T_Stone, board: GoBasicBoard) -> GoMove:
+        num = board.num()
+        best_line = max(min(3, (num - 1) // 2), 1)
+        offset = 0
+        while best_line - offset >= 1 or best_line + offset <= (num + 1) // 2:
+            for sign in (1, -1):
+                # vertex of a square
+                beg = best_line + sign * offset
+                if beg < 1 or beg > (num + 1) // 2 or (offset == 0 and sign == -1):
+                    continue
+                # travel the square
+                for n in range(beg, num + 1 - beg):
+                    for row, col in ((beg, n), (n, num + 1 - beg)):
+                        # avoid filling its own eye
+                        if board.is_emtpy((row, col)) and board.test_liberty((row, col), stone) >= 2:
+                            return row, col
+                        if board.is_emtpy((num + 1 - row, num + 1 - col)) and board.test_liberty(
+                                (num + 1 - row, num + 1 - col), stone) >= 2:
+                            return num + 1 - row, num + 1 - col
+            offset += 1
+        return None
+
+    @staticmethod
+    def get_liberty_suggestion(stone: T_Stone, board: GoBasicBoard) -> GoMove:
+        """
+        一个简单的发现关键点的策略
+        1. 对方只有1口气，攻击
+        2. 我方只有1口气，如果能长气则长气
+        3. 对方只有2口气，攻击
+        4. 长气
+        """
+        class KeyChainHolder(object):
+            def __init__(self):
+                self._min_liberty_stones = (4, 0)
+                self._min_chain = None
+
+            def add(self, c: BasicChain):
+                liberty_stones = c.get_liberty_stone_num()
+                if self._min_chain is None or liberty_stones < self._min_liberty_stones:
+                    self._min_chain = c
+                    self._min_liberty_stones = liberty_stones
+
+            def get_liberty_num(self):
+                return self._min_liberty_stones[0]
+
+            def get_liberties(self):
+                return self._min_chain.get_liberties() if self._min_chain is not None else set()
+
+            def get_one_liberty(self):
+                assert self._min_chain is not None
+                return list(self._min_chain.get_liberties())[0]
+
+            def get_chain(self):
+                return self._min_chain
+
+        same_holder = KeyChainHolder()
+        oppo_holder = KeyChainHolder()
+        opponent_stone = GoStone.get_opponent(stone)
+        num = board.num()
+        chains = board._chains
+        raw_board = board.get_board()
+        for row in range(1, num + 1):
+            for col in range(1, num + 1):
+                if chains[row, col] is None:
+                    continue
+                if raw_board[row, col] == stone:
+                    same_holder.add(chains[row, col])
+                elif raw_board[row, col] == opponent_stone:
+                    oppo_holder.add(chains[row, col])
+        chain = same_holder.get_chain()
+        if chain is None:
+            return GoBasicSuggester.get_static_suggestion(stone, board)
+        oppo_liberty_num = oppo_holder.get_liberty_num()
+        same_liberty_num = same_holder.get_liberty_num()
+
+        if oppo_liberty_num == 1:
+            # valid
+            return oppo_holder.get_one_liberty()
+        if same_liberty_num == 1:
+            chain = same_holder.get_chain()
+            liberty = chain.get_one_liberty()
+            new_liberty_num = board.test_filling_liberty(chain, liberty)
+            # valid
+            if new_liberty_num > 1:
+                return liberty
+        if oppo_liberty_num == 2:
+            for liberty in oppo_holder.get_liberties():
+                if board.is_valid_move(liberty, stone):
+                    return liberty
+
+        max_new_liberty_num = 0
+        best_liberty = None
+        for liberty in same_holder.get_liberties():
+            new_liberty_num = board.test_filling_liberty(chain, liberty)
+            if new_liberty_num > max_new_liberty_num:
+                best_liberty = liberty
+                max_new_liberty_num = new_liberty_num
+        if max_new_liberty_num <= same_liberty_num:
+            return GoBasicSuggester.get_static_suggestion(stone, board)
+        return best_liberty
