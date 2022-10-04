@@ -50,3 +50,30 @@ class IAgent(object):
         Inform that other_player takes the action
         """
         raise NotImplementedError()
+
+
+class IActionConverter(object):
+    def get_outer_action(self, inner_action: Any) -> Any:
+        raise NotImplementedError()
+
+    def get_inner_action(self, outer_action: Any) -> Any:
+        raise NotImplementedError()
+
+
+class IdentityActionConverter(IActionConverter):
+    def get_outer_action(self, inner_action: Any) -> Any:
+        return inner_action
+
+    def get_inner_action(self, outer_action: Any) -> Any:
+        return outer_action
+
+
+class ReverseActionConverter(IActionConverter):
+    def __init__(self, converter: IActionConverter):
+        self._converter = converter
+
+    def get_outer_action(self, inner_action: Any) -> Any:
+        return self._converter.get_inner_action(inner_action)
+
+    def get_inner_action(self, outer_action: Any) -> Any:
+        return self._converter.get_outer_action(outer_action)

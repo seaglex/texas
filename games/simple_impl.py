@@ -1,15 +1,16 @@
 from typing import Any, List
 import datetime as dt
 
-from .common import IGameState, IAgent
+from .common import IGameState, IAgent, IActionConverter, IdentityActionConverter
 from search.mcts import Mcts
 
 
 class MctsAgent(IAgent):
-    def __init__(self, player_index: int, mcts: Mcts, state: IGameState):
+    def __init__(self, player_index: int, mcts: Mcts, state: IGameState, converter: IActionConverter = None):
         self._mcts = mcts
         self._state = state
         self._player_index = player_index
+        self._converter = converter if converter is not None else IdentityActionConverter()
 
     def get_name(self) -> str:
         return type(self).__name__ + str(self._player_index)
@@ -17,18 +18,19 @@ class MctsAgent(IAgent):
     def step(self) -> Any:
         action = self._mcts.mcts_search(self._state)
         self._state.apply_action(action)
-        return action
+        return self._converter.get_outer_action(action)
 
     def inform_action(self, other_player: int, action: Any) -> type(None):
         assert other_player != self._player_index
-        self._state.apply_action(action)
+        self._state.apply_action(self._converter.get_inner_action(action))
 
 
 class RandomAgent(IAgent):
-    def __init__(self, player_index: int, state: IGameState, rng):
+    def __init__(self, player_index: int, state: IGameState, rng, converter: IActionConverter = None):
         self._player_index = player_index
         self._state = state
         self._rng = rng
+        self._converter = converter if converter is not None else IdentityActionConverter()
 
     def get_name(self) -> str:
         return type(self).__name__ + str(self._player_index)
@@ -37,11 +39,11 @@ class RandomAgent(IAgent):
         actions = self._state.get_valid_actions()
         action = actions[self._rng.randint(0, len(actions))]
         self._state.apply_action(action)
-        return action
+        return self._converter.get_outer_action(action)
 
     def inform_action(self, other_player: int, action: Any) -> type(None):
         assert other_player != self._player_index
-        self._state.apply_action(action)
+        self._state.apply_action(self._converter.get_inner_action(action))
 
 
 class HumanAgent(IAgent):
