@@ -1,7 +1,7 @@
 import numpy as np
 from collections import defaultdict
 
-from texas.poker import PokerConst, PokerKind
+from texas.poker import PokerConst, PokerSymbol
 
 
 class Simulator(object):
@@ -9,11 +9,11 @@ class Simulator(object):
 
     def __init__(self, judge):
         digits = np.arange(PokerConst.MIN_DIGIT, PokerConst.MAX_DIGIT + 1, 1)
-        kinds = [PokerKind.heart.value] * PokerConst.DIGIT_NUM
-        kinds += [PokerKind.diamond.value] * PokerConst.DIGIT_NUM
-        kinds += [PokerKind.spade.value] * PokerConst.DIGIT_NUM
-        kinds += [PokerKind.club.value] * PokerConst.DIGIT_NUM
-        self.total_cards = np.array([kinds, list(digits) * 4]).T
+        syms = [PokerSymbol.heart.value] * PokerConst.DIGIT_NUM
+        syms += [PokerSymbol.diamond.value] * PokerConst.DIGIT_NUM
+        syms += [PokerSymbol.spade.value] * PokerConst.DIGIT_NUM
+        syms += [PokerSymbol.club.value] * PokerConst.DIGIT_NUM
+        self.total_cards = np.array([syms, list(digits) * 4]).T
         self.judge = judge
 
     def get_pr(self, cards, common_cards=None, player_num=2, trial_num=100):
@@ -86,7 +86,7 @@ class Simulator(object):
         for i in range(trial_num):
             np.random.shuffle(left_cards)
             total_common_cards = common_cards + left_cards[:self.MAX_COMMON_NUM - len(common_cards)]
-            level, _ = judge._get_level_suit(cards + total_common_cards)
+            level, _ = judge._get_level_set(cards + total_common_cards)
             level_counts[level] += 1
         np.random.set_state(random_state)
         return level_counts

@@ -51,4 +51,4 @@ if __name__ == "__main__":
             [c.get_data() for c in cards[2:]],
             player_num=args.player_num,
         )
-        print(cards, "Winning pr:", pr1, pr2)
+        print(cards, f"Winning pr: {pr1:.1%}(MC) {pr2:.1%}(Appox)")

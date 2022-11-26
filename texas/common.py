@@ -17,11 +17,11 @@ class TexasConst(object):
     MAX_COMMUNITY_SIZE = 5
 
 
-"""
-实际：保守fold/check，基础call/bet，激进/raise，非常激进/raise_more，后三种都有可能遇到all_in
-方案：内部一个状态，外部一个状态
-"""
 class InnerAction(enum.IntEnum):
+    """
+    实际：保守fold/check，基础call/bet，激进/raise，非常激进/raise_more，后三种都有可能遇到all_in
+    方案：内部一个状态，外部一个状态
+    """
     Conservative = 0
     Normal = 1
     Aggressive = 2

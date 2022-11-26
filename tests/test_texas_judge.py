@@ -37,7 +37,7 @@ class TexasJudgeTestCase(unittest.TestCase):
         judge = TexasJudge()
         for cards, level in self.cards_levels:
             # random.shuffle(total_cards)
-            best_level, best_suit = judge._get_level_suit(cards)
+            best_level, best_set = judge._get_level_set(cards)
             self.assertEqual(level, best_level, cards)
 
     def test_arg_max(self):

@@ -15,6 +15,7 @@ def load_model(fname):
     with open(fname, "rb") as fin:
         return pickle.load(fin)
 
+
 def start_game(agent_num, is_public, models, seed):
     judge = TexasJudge()
     simulator = Simulator(judge)
