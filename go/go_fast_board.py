@@ -9,13 +9,11 @@ from __future__ import annotations
 import numpy as np
 from typing import List, Iterable
 
-from .go_common import GoStone, IGoBoard, Coordinate, T_Stone
+from .go_common import GoStone, IGoBoard, Coordinate, TStone
 
 
 BoardIndex = int
-
-
-GO_STONE_EMPTY = GoStone.Empty
+GO_STONE_EMPTY = GoStone.Empty  # for more efficiency
 
 
 class FastChainStat(object):
@@ -122,7 +120,7 @@ class GoFastBoard(IGoBoard):
     def _get_index(self, pos: Coordinate) -> BoardIndex:
         return pos[0] * self._num + pos[1]
 
-    def iter_valid_moves(self, stone: T_Stone) -> List[BoardIndex]:
+    def iter_valid_moves(self, stone: TStone) -> List[BoardIndex]:
         # Warning: NOT a good design, just to reduce time
         # cache _iter_indexes()
         # use const GO_STONE_EMPTY instead of GoStone.Empty
@@ -136,7 +134,7 @@ class GoFastBoard(IGoBoard):
     def get_pass_move(self) -> BoardIndex:
         return GoFastBoard.PASS_INDEX
 
-    def is_valid_move(self, index: BoardIndex, stone: T_Stone) -> bool:
+    def is_valid_move(self, index: BoardIndex, stone: TStone) -> bool:
         """
         Pass is not included
         :param index:
@@ -157,7 +155,7 @@ class GoFastBoard(IGoBoard):
                 return True
         return False
 
-    def put_stone(self, index: BoardIndex, stone: T_Stone) -> None:
+    def put_stone(self, index: BoardIndex, stone: TStone) -> None:
         if index == GoFastBoard.PASS_INDEX:
             return
         assert self._board[index] == GO_STONE_EMPTY
@@ -166,7 +164,7 @@ class GoFastBoard(IGoBoard):
         self._capture_dead_chains(index, stone)
         return
 
-    def _join_chains(self, index: BoardIndex, stone: T_Stone) -> None:
+    def _join_chains(self, index: BoardIndex, stone: TStone) -> None:
         largest_chain_size = 0
         largest_chain_head = None
         largest_chain_index = 0
@@ -210,7 +208,7 @@ class GoFastBoard(IGoBoard):
             self._chain_head[n].remove_liberty(index)
         return
 
-    def _capture_dead_chains(self, index: BoardIndex, stone: T_Stone):
+    def _capture_dead_chains(self, index: BoardIndex, stone: TStone):
         oppo_stone = GoStone.get_opponent(stone)
         for n in self._neighbors(index):
             if self._board[n] != oppo_stone or self._chain_head[n].num_pseudo_liberties > 0:
@@ -291,8 +289,8 @@ class GoFastBoard(IGoBoard):
                 )
         return True, ""
 
-    def put_stone_by_coordinate(self, coordinate: Coordinate, stone: T_Stone) -> None:
+    def put_stone_by_coordinate(self, coordinate: Coordinate, stone: TStone) -> None:
         self.put_stone(self._get_index(coordinate), stone)
 
-    def is_valid_move_by_coordinate(self, coordinate: Coordinate, stone: T_Stone) -> bool:
+    def is_valid_move_by_coordinate(self, coordinate: Coordinate, stone: TStone) -> bool:
         return self.is_valid_move(self._get_index(coordinate), stone)

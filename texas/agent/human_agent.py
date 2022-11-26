@@ -1,5 +1,6 @@
 from texas.poker import PokerCard
 from texas import common
+import sys
 
 
 class HumanAgent(common.BaseAgent):
@@ -38,6 +39,8 @@ class HumanAgent(common.BaseAgent):
                 return self._wrap_return(common.AgentAction.Raise, amount)
             if action_str in ("a", "all-in", "allin", "all_in"):
                 return self._wrap_return(common.AgentAction.All_in, self._total_amount - self._cum_amount)
+            if action_str.lower() == "exit":
+                sys.exit(0)
             print("Wrong input")
 
     def get_hole_cards(self, hold_cards):

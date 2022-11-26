@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import List, Any
 import copy
 
-from .go_common import GoStone, IGoBoard, T_Stone
+from .go_common import GoStone, IGoBoard, TStone
 from .go_judge import GoJudge
 from games.common import IGameState
 
@@ -24,7 +24,7 @@ class GoState(IGameState):
     def get_current_player(self) -> int:
         return self._player_index
 
-    def get_current_stone(self) -> T_Stone:
+    def get_current_stone(self) -> TStone:
         return self._stone
 
     def get_move_count(self) -> int:

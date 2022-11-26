@@ -7,7 +7,6 @@ from typing import Final, List, Tuple
 import copy
 
 from search.mcts import IGameState
-from .common import IAgent
 
 
 Action = Tuple[int, int]

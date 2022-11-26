@@ -4,9 +4,7 @@ from typing import Any, Tuple, List
 
 
 Coordinate = Tuple[int, int]
-
-
-T_Stone = int
+TStone = int  # stone is too short for a type
 
 
 class GoStone(object):
@@ -46,13 +44,13 @@ class GoStone(object):
 
 
 class IGoBoard(object):
-    def is_valid_move(self, pos: Any, stone: T_Stone) -> bool:
+    def is_valid_move(self, pos: Any, stone: TStone) -> bool:
         raise NotImplementedError()
 
-    def put_stone(self, pos: Any, stone: T_Stone) -> None:
+    def put_stone(self, pos: Any, stone: TStone) -> None:
         raise NotImplementedError()
 
-    def iter_valid_moves(self, stone: T_Stone) -> List[Any]:
+    def iter_valid_moves(self, stone: TStone) -> List[Any]:
         raise NotImplementedError()
 
     def get_pass_move(self) -> Any:
@@ -71,8 +69,8 @@ class IGoBoard(object):
     def check_consistence(self) -> (bool, str):
         raise NotImplementedError()
 
-    def put_stone_by_coordinate(self, coordinate: Coordinate, stone: T_Stone):
+    def put_stone_by_coordinate(self, coordinate: Coordinate, stone: TStone):
         raise NotImplementedError()
 
-    def is_valid_move_by_coordinate(self, coordinate: Coordinate, stone: T_Stone) -> bool:
+    def is_valid_move_by_coordinate(self, coordinate: Coordinate, stone: TStone) -> bool:
         raise NotImplementedError()

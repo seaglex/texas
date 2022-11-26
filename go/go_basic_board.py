@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 from typing import List, Set, Iterable, Optional
 
-from .go_common import GoStone, IGoBoard, Coordinate, T_Stone
+from .go_common import GoStone, IGoBoard, Coordinate, TStone
 
 
 GoMove = Optional[Coordinate]
@@ -27,13 +27,13 @@ class BasicChain(object):
     """
     Chain: joined stones and their liberties
     """
-    def __init__(self, stone: T_Stone) -> type(None):
-        self._stone: T_Stone = stone
+    def __init__(self, stone: TStone) -> type(None):
+        self._stone: TStone = stone
         self._stone_coordinates: List[Coordinate] = []
         self._liberties: Set[Coordinate] = set()
         self._oppo_neighbors: Set[BasicChain] = set()
 
-    def append_stone(self, stone: T_Stone, coordinate: Coordinate,
+    def append_stone(self, stone: TStone, coordinate: Coordinate,
                      liberties: Iterable[Coordinate], oppo_neighbors: Iterable[BasicChain]) -> type(None):
         assert stone == self._stone
         self._stone_coordinates.append(coordinate)
@@ -55,7 +55,7 @@ class BasicChain(object):
         self._oppo_neighbors.remove(src)
         self._oppo_neighbors.add(dst)
 
-    def join(self, stone: T_Stone, coordinate: Coordinate,
+    def join(self, stone: TStone, coordinate: Coordinate,
              liberties: Iterable[Coordinate], oppo_neighbors: Iterable[BasicChain],
              other_chains: Iterable[BasicChain]
              ):
@@ -154,7 +154,7 @@ class GoBasicBoard(IGoBoard):
         self._chains = np.full((num + 2, num + 2), None, dtype=BasicChain)
 
     # board operation
-    def is_valid_move(self, pos: GoMove, stone: T_Stone):
+    def is_valid_move(self, pos: GoMove, stone: TStone):
         """
         尚未考虑全局同型（打劫相关问题）
         :param pos:
@@ -185,7 +185,7 @@ class GoBasicBoard(IGoBoard):
             return True
         return False
 
-    def put_stone(self, pos: GoMove, stone: T_Stone) -> None:
+    def put_stone(self, pos: GoMove, stone: TStone) -> None:
         if pos is None:
             return
         my_coord = pos
@@ -236,7 +236,7 @@ class GoBasicBoard(IGoBoard):
     def get_board(self):
         return self._board
 
-    def iter_valid_moves(self, stone: T_Stone):
+    def iter_valid_moves(self, stone: TStone):
         moves = []
         for x in range(1, self._num + 1):
             for y in range(1, self._num + 1):
@@ -262,10 +262,10 @@ class GoBasicBoard(IGoBoard):
         return True, ""
 
     # coordinate operation
-    def put_stone_by_coordinate(self, coordinate: Coordinate, stone: T_Stone) -> None:
+    def put_stone_by_coordinate(self, coordinate: Coordinate, stone: TStone) -> None:
         self.put_stone(coordinate, stone)
 
-    def is_valid_move_by_coordinate(self, coordinate: Coordinate, stone: T_Stone) -> bool:
+    def is_valid_move_by_coordinate(self, coordinate: Coordinate, stone: TStone) -> bool:
         return self.is_valid_move(coordinate, stone)
 
     # information
@@ -295,7 +295,7 @@ class GoBasicBoard(IGoBoard):
     def is_emtpy(self, my_coord: Coordinate) -> bool:
         return self._board[my_coord[0], my_coord[1]] == GoStone.Empty
 
-    def test_liberty(self, my_coord: Coordinate, stone: T_Stone) -> int:
+    def test_liberty(self, my_coord: Coordinate) -> int:
         """
         :return: the number of liberties
         """
@@ -309,7 +309,7 @@ class GoBasicBoard(IGoBoard):
 
 class GoBasicSuggester(object):
     @staticmethod
-    def get_static_suggestion(stone: T_Stone, board: GoBasicBoard) -> GoMove:
+    def get_static_suggestion(stone: TStone, board: GoBasicBoard) -> GoMove:
         num = board.num()
         best_line = max(min(3, (num - 1) // 2), 1)
         offset = 0
@@ -323,16 +323,16 @@ class GoBasicSuggester(object):
                 for n in range(beg, num + 1 - beg):
                     for row, col in ((beg, n), (n, num + 1 - beg)):
                         # avoid filling its own eye
-                        if board.is_emtpy((row, col)) and board.test_liberty((row, col), stone) >= 2:
+                        if board.is_emtpy((row, col)) and board.test_liberty((row, col)) >= 2:
                             return row, col
                         if board.is_emtpy((num + 1 - row, num + 1 - col)) and board.test_liberty(
-                                (num + 1 - row, num + 1 - col), stone) >= 2:
+                                (num + 1 - row, num + 1 - col)) >= 2:
                             return num + 1 - row, num + 1 - col
             offset += 1
         return None
 
     @staticmethod
-    def get_liberty_suggestion(stone: T_Stone, board: GoBasicBoard) -> GoMove:
+    def get_liberty_suggestion(stone: TStone, board: GoBasicBoard) -> GoMove:
         """
         一个简单的发现关键点的策略
         1. 对方只有1口气，攻击

@@ -1,7 +1,7 @@
 import argparse
 from typing import Any, Optional
-
 import numpy as np
+import sys
 
 from games.simple_impl import MctsAgent, SequentialGame, RandomAgent, HumanAgent
 from games.common import IActionConverter, ReverseActionConverter
@@ -39,7 +39,9 @@ class GoHumanAgent(HumanAgent):
         if is_last_input_invalid:
             print("Invalid action")
         while True:
-            action_str = input("input x,y or empty ")
+            action_str = input("input x,y or empty(for pass) ")
+            if action_str == "exit":
+                sys.exit(0)
             if not action_str:
                 return self._converter.get_outer_action(None)
             else:
@@ -55,20 +57,22 @@ class GoHumanAgent(HumanAgent):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("-b", "--board_size", type=int, default=9)
+    args = parser.parse_args()
 
-    BOARD_SIZE = 9
+    board_size = args.board_size
     rng = np.random.RandomState(0)
-    to_index_action = GoToIndexConverter(BOARD_SIZE, GoFastBoard.PASS_INDEX)
+    to_index_action = GoToIndexConverter(board_size, GoFastBoard.PASS_INDEX)
 
     # state决定Action的类型，所有agents都需要和state的Action类型一致
     def state_factory_method():
-        return GoState(GoFastBoard(BOARD_SIZE))
+        return GoState(GoFastBoard(board_size))
 
     mcts_core = Mcts(RandomRolloutEvaluator(1, rng), puct_const=2.0, max_simulations=1000, random_state=rng)
     # agent0 = MctsAgent(0, mcts_core, state_factory_method())
-    agent0 = SimpleAgentV1(0, BOARD_SIZE, to_index_action)
-    agent1 = MctsAgent(1, mcts_core, state_factory_method())
+    agent0 = SimpleAgentV1(0, board_size, to_index_action)
+    # agent1 = MctsAgent(1, mcts_core, state_factory_method())
     # agent1 = RandomAgent(1, state_factory_method(), rng)
-    # agent1 = GoHumanAgent(1, state_factory_method(), to_index_action)
+    agent1 = GoHumanAgent(1, state_factory_method(), to_index_action)
     game = SequentialGame()
     game.run_game(state_factory_method(), [agent0, agent1], True)

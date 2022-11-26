@@ -6,7 +6,7 @@ phase: pre-flop/flop/Turn/river
 """
 import numpy as np
 
-from .poker import PokerKind, PokerConst, PokerCard
+from .poker import PokerSymbol, PokerConst, PokerCard
 from .common import AgentAction, TexasRound
 
 
@@ -108,11 +108,11 @@ class NoLimitTexasGame(object):
             np.random.seed(seed)
 
         digits = np.arange(PokerConst.MIN_DIGIT, PokerConst.MAX_DIGIT + 1, 1)
-        kinds = [PokerKind.heart.value] * PokerConst.DIGIT_NUM
-        kinds += [PokerKind.diamond.value] * PokerConst.DIGIT_NUM
-        kinds += [PokerKind.spade.value] * PokerConst.DIGIT_NUM
-        kinds += [PokerKind.club.value] * PokerConst.DIGIT_NUM
-        self.total_cards = np.array([kinds, list(digits) * 4]).T
+        symbols = [PokerSymbol.heart.value] * PokerConst.DIGIT_NUM
+        symbols += [PokerSymbol.diamond.value] * PokerConst.DIGIT_NUM
+        symbols += [PokerSymbol.spade.value] * PokerConst.DIGIT_NUM
+        symbols += [PokerSymbol.club.value] * PokerConst.DIGIT_NUM
+        self.total_cards = np.array([symbols, list(digits) * 4]).T
 
     def run_a_hand(self, agents, is_verbose, is_public=False):
         if is_verbose:

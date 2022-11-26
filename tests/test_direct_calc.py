@@ -10,16 +10,16 @@ class SimulatorTestCase(unittest.TestCase):
     def test_manual_cases(self):
         cases = [
             [
-                [(poker.PokerKind.heart, 4), (poker.PokerKind.spade, 4)],
-                [(poker.PokerKind.diamond, 4),],
+                [(poker.PokerSymbol.heart, 4), (poker.PokerSymbol.spade, 4)],
+                [(poker.PokerSymbol.diamond, 4), ],
             ],
             [
-                [(poker.PokerKind.heart, 2), (poker.PokerKind.heart, 3)],
-                [(poker.PokerKind.heart, 4), ],
+                [(poker.PokerSymbol.heart, 2), (poker.PokerSymbol.heart, 3)],
+                [(poker.PokerSymbol.heart, 4), ],
             ],
             [
-                [(poker.PokerKind.heart, 2), (poker.PokerKind.heart, 3)],
-                [(poker.PokerKind.heart, 4), (poker.PokerKind.heart, 5),],
+                [(poker.PokerSymbol.heart, 2), (poker.PokerSymbol.heart, 3)],
+                [(poker.PokerSymbol.heart, 4), (poker.PokerSymbol.heart, 5), ],
             ],
         ]
         with open("test_approx.log", "w") as fout:

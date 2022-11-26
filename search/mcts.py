@@ -20,6 +20,7 @@ class IEvaluator(object):
 
 class SearchNode(object):
     INF = float("inf")
+
     def __init__(self, player_index: int, action: Any, prior=1.0):
         """
         :param player_index: which player benefits from the action;

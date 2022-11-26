@@ -11,7 +11,7 @@
 from collections import defaultdict
 import math
 
-from .poker import PokerDigit, PokerKind, PokerConst
+from .poker import PokerDigit, PokerSymbol, PokerConst
 from .judge import TexasLevel
 from .common import TexasConst
 
@@ -84,24 +84,24 @@ class FlushNumTool(object):
 
 class ApproxCalc(object):
     @staticmethod
-    def count_kind_digits(cards):
+    def count_sym_digits(cards):
         """
-        :return: {kind: sorted-digits}
+        :return: {symbol: sorted-digits}
         """
         # statistics
-        kind_digits = {}
-        last_kind = PokerKind.unknown
+        sym_digits = {}
+        last_sym = PokerSymbol.unknown
         digits = []
         cards = list(sorted(cards, key=lambda c: (c[0] << 4) + c[1]))
-        for kind, digit in cards:
-            if kind != last_kind:
+        for sym, digit in cards:
+            if sym != last_sym:
                 if digits:
-                    kind_digits[last_kind] = digits
+                    sym_digits[last_sym] = digits
                     digits = []
-                last_kind = kind
+                last_sym = sym
             digits.append(digit)
-        kind_digits[last_kind] = digits
-        return kind_digits
+        sym_digits[last_sym] = digits
+        return sym_digits
 
     @staticmethod
     def count_unique_digits(cards):
@@ -119,19 +119,19 @@ class ApproxCalc(object):
         return digits
 
     @staticmethod
-    def count_kinds(cards):
+    def count_symbols(cards):
         """
-        :return: {kind: count}, {kind, max-digit}
+        :return: {symbol: count}, {symbol, max-digit}
         """
-        kind_counts = defaultdict(int)
-        kind_max_digits = {}
+        sym_counts = defaultdict(int)
+        sym_max_digits = {}
         for c in cards:
-            kind_counts[c[0]] += 1
-            if c[0] not in kind_max_digits:
-                kind_max_digits[c[0]] = c[1]
+            sym_counts[c[0]] += 1
+            if c[0] not in sym_max_digits:
+                sym_max_digits[c[0]] = c[1]
             else:
-                kind_max_digits[c[0]] = max(c[1], kind_max_digits[c[0]])
-        return kind_counts, kind_max_digits
+                sym_max_digits[c[0]] = max(c[1], sym_max_digits[c[0]])
+        return sym_counts, sym_max_digits
 
     @staticmethod
     def count_digits(cards):
@@ -162,15 +162,15 @@ class ApproxCalc(object):
         num_to_check = TexasConst.MAX_HAND_SIZE - len(cards)
         # A and 1 never in the same straight
         cards = cards + [(c[0], PokerDigit.A_MINUS) for c in cards if c[1] == PokerDigit.A]
-        kind_digits = ApproxCalc.count_kind_digits(cards)
+        sym_digits = ApproxCalc.count_sym_digits(cards)
         tool = StraightFlushTool()
 
         # pr(winning) = 1 - pr(fail all the possibility)
         # 独立假设没问题
         pr = 1.0
-        for _, digits in kind_digits.items():
+        for _, digits in sym_digits.items():
             pr *= 1 - self._ana_single_straight_pr(digits, num_to_check, num_left, tool)
-        pr *= (1 - self._ana_single_straight_pr([], num_to_check, num_left, tool)) ** (4 - len(kind_digits))
+        pr *= (1 - self._ana_single_straight_pr([], num_to_check, num_left, tool)) ** (4 - len(sym_digits))
         return 1 - pr
 
     def get_straight_pr(self, cards):
@@ -184,19 +184,19 @@ class ApproxCalc(object):
     def get_flush_pr(self, cards):
         num_left = TexasConst.TOTAL_NUM - len(cards)
         num_to_check = TexasConst.MAX_HAND_SIZE - len(cards)
-        kind_counts, kind_max_digits = ApproxCalc.count_kinds(cards)
+        sym_counts, sym_max_digits = ApproxCalc.count_symbols(cards)
         tool = FlushNumTool()
         # pr(winning) = 1 - pr(fail all the possibility)
         # 独立性假设没问题
         pr = 1.0
-        for kind, cnt in kind_counts.items():
+        for sym, cnt in sym_counts.items():
             if cnt >= TexasConst.BEST_HAND_SIZE:
                 return 1.0
             target_cnt = TexasConst.BEST_HAND_SIZE - cnt
             pr *= 1 - tool.pr_choose_target_in_subset(num_left, num_to_check, PokerConst.DIGIT_NUM - cnt, target_cnt)
         pr *= (1 - tool.pr_choose_target_in_subset(
             num_left, num_to_check, PokerConst.DIGIT_NUM, TexasConst.BEST_HAND_SIZE
-        )) ** (4 - len(kind_counts))
+        )) ** (4 - len(sym_counts))
         return 1 - pr
 
     def get_num_pr(self, digit_counts, num):
